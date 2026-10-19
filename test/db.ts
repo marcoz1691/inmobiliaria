@@ -14,3 +14,17 @@ export async function seedTenant(db: Db, slug: string) {
     .returning();
   return { tenant: tenant!, agent: agent! };
 }
+
+/** Points the process-wide getDb() (src/server/db/client.ts) at a fresh in-memory database. */
+export async function useTestDb(): Promise<Db> {
+  const db = await testDb();
+  (globalThis as unknown as { __db?: Promise<Db> }).__db = Promise.resolve(db);
+  return db;
+}
+
+export function member(
+  tenantId: string,
+  over: Partial<import("@/server/session").MemberContext> = {},
+): import("@/server/session").MemberContext {
+  return { tenantId, tenantSlug: "t", userId: "user-" + tenantId.slice(0, 8), userName: "Test", role: "owner", agentId: null, ...over };
+}
