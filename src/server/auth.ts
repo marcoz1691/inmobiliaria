@@ -4,6 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { env } from "@/env";
 import { getDb } from "./db/client";
+import { appSecret } from "./secrets";
 import { account, session, user, verification } from "./db/schema";
 
 async function build() {
@@ -11,8 +12,7 @@ async function build() {
   return betterAuth({
     appName: "Inmobiliaria",
     baseURL: env.APP_URL,
-    // Dev/test fallback only; env.ts refuses to boot production without BETTER_AUTH_SECRET.
-    secret: env.BETTER_AUTH_SECRET ?? "dev-only-secret-change-me-dev-only-secret",
+    secret: appSecret(),
     database: drizzleAdapter(db, { provider: "pg", schema: { user, session, account, verification } }),
     emailAndPassword: {
       enabled: true,

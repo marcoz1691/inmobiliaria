@@ -22,6 +22,13 @@
       "when": 1792386363671,
       "tag": "0002_grants_and_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792388046576,
+      "tag": "0003_tenant_self_read",
+      "breakpoints": true
     }
   ]
 }

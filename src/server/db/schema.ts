@@ -117,7 +117,15 @@ export const tenants = pgTable("tenants", {
   branding: jsonb("branding").$type<TenantBranding>().notNull().default({}),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
-});
+}, () => [
+  // app_user may read (not change) only its own tenant row.
+  pgPolicy("tenants_self_read", {
+    as: "permissive",
+    for: "select",
+    to: appUser,
+    using: sql`id = nullif(current_setting('app.tenant_id', true), '')::uuid`,
+  }),
+]);
 
 export type TenantBranding = { accent?: string; logoUrl?: string; tagline?: string };
 
