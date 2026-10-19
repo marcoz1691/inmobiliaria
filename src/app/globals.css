@@ -1,26 +1,115 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+ * Design tokens — see docs/design.md.
+ * Contrast ratios (WCAG 2.x) were computed for every text/background pair noted below.
+ */
+@theme {
+  /* Neutrals */
+  --color-paper: #f7f5f0; /* page background, warm off-white */
+  --color-sand: #ede8df; /* sunken sections, image placeholders */
+  --color-white: #ffffff;
+  --color-line: #ddd7cc; /* decorative hairlines only */
+  --color-line-strong: #8a8478; /* UI boundaries (3.41:1 on paper) */
+  --color-ink: #15171a; /* body text (16.48:1 on paper) */
+  --color-ink-muted: #585c63; /* secondary text (6.17:1 paper, 5.51:1 sand) */
+  --color-paper-muted: #b9b4aa; /* secondary text on ink (8.70:1) */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Brand */
+  --color-navy: #1b2a41; /* primary actions (white on navy 14.44:1) */
+  --color-navy-hover: #2a3d5c; /* white on it 10.93:1 */
+  --color-clay: #9a4527; /* accent text, eyebrows (5.92:1 paper, 5.29:1 sand) */
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* Property status (fg on bg) */
+  --color-available: #1e5236;
+  --color-available-bg: #e2eee5; /* 7.60:1 */
+  --color-reserved: #7a4a00;
+  --color-reserved-bg: #f5ead3; /* 6.27:1 */
+  --color-sold: #7e2626;
+  --color-sold-bg: #f3e1de; /* 7.59:1 */
+  --color-rented: #25446a;
+  --color-rented-bg: #e1e8f1; /* 8.05:1 */
+
+  /* Type scale (fluid). Body uses Tailwind's default text-sm/base/lg. */
+  --text-eyebrow: 0.8125rem;
+  --text-eyebrow--line-height: 1.25rem;
+  --text-eyebrow--letter-spacing: 0.08em;
+  --text-display-xl: clamp(2.5rem, 1.5rem + 4vw, 4.75rem);
+  --text-display-xl--line-height: 1.02;
+  --text-display-xl--letter-spacing: -0.02em;
+  --text-display-lg: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
+  --text-display-lg--line-height: 1.08;
+  --text-display-lg--letter-spacing: -0.015em;
+  --text-display-md: clamp(1.5rem, 1.25rem + 1vw, 2rem);
+  --text-display-md--line-height: 1.15;
+  --text-display-md--letter-spacing: -0.01em;
+
+  /* Radii: crisp, editorial. Full pills are reserved for actions. */
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 8px;
+
+  /* Motion */
+  --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+
+  --animate-shimmer: shimmer 1.6s ease-in-out infinite;
+  @keyframes shimmer {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.5;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* Font families come from next/font CSS variables set on <html> (src/app/layout.tsx). */
+@theme inline {
+  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-newsreader), ui-serif, Georgia, serif;
+}
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    scroll-padding-top: 5rem; /* keep anchored content clear of the sticky header */
+  }
+
+  body {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+  }
+
+  ::selection {
+    background: var(--color-navy);
+    color: var(--color-white);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-navy);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
