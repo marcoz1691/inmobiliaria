@@ -13,3 +13,8 @@ export default function imageLoader({ src, width }: LoaderArgs): string {
   const w = MEDIA_WIDTHS.find((mw) => mw >= width) ?? MEDIA_WIDTHS[MEDIA_WIDTHS.length - 1];
   return `${base}-${w}.webp`;
 }
+
+/** Sources the loader cannot resize (static files, data URIs) should render `unoptimized`. */
+export function isUnsizedSource(src: string): boolean {
+  return !src.startsWith("media:");
+}
