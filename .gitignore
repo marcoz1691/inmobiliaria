@@ -49,3 +49,4 @@ next-env.d.ts
 !.env.example
 /public/dev-assets/
 /bench-shots/
+/test-results/
