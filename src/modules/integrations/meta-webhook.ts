@@ -1,9 +1,9 @@
 import { z } from "zod";
-import { and, eq, inArray, lt, or, sql } from "drizzle-orm";
+import { and, count, eq, inArray, lt, or, sql } from "drizzle-orm";
 import { env } from "@/env";
 import type { Db } from "@/server/db/create";
 import { withTenant } from "@/server/db/tenant-tx";
-import { contacts, deals, tenants, webhookEvents } from "@/server/db/schema";
+import { channelAccounts, contacts, deals, tenants, webhookEvents } from "@/server/db/schema";
 import { errorInfo, log } from "@/lib/logger";
 import { logActivity, upsertContact } from "@/modules/crm/service";
 import { enqueue } from "@/modules/jobs/queue";
@@ -93,15 +93,47 @@ export function extractEvents(body: unknown): InboundEvent[] {
 
 /* ───────────── tenant resolution ───────────── */
 
+const ACCOUNT_PROVIDER: Record<InboundEvent["provider"], (typeof channelAccounts.$inferSelect)["provider"]> = {
+  whatsapp: "whatsapp",
+  messenger: "page",
+  meta_leadgen: "page",
+  instagram: "instagram",
+};
+
+export type TenantResolution = { tenantId: string; via: "account" | "fallback" } | { tenantId: null; reason: string };
+
 /**
- * MVP: one WhatsApp number / page per deployment, served by DEFAULT_TENANT_SLUG. A WhatsApp message
- * addressed to a different phone_number_id than ours is ignored. Multi-tenant routing needs the
- * `channel_accounts` table proposed in docs/integrations.md.
+ * Routes an event to the tenant that registered the receiving account in `channel_accounts`
+ * (phone_number_id, page id or Instagram id). Runs as the system role: no tenant is known yet.
+ *
+ * Fallback to DEFAULT_TENANT_SLUG only while routing is not configured, so a message is never
+ * delivered to a tenant that does not own the account:
+ *  - once any account is registered for a provider, unknown ids of that provider are ignored;
+ *  - a WhatsApp id other than WHATSAPP_PHONE_NUMBER_ID is ignored;
+ *  - in production, only when the default tenant is the only tenant (single-tenant deploy).
  */
-export async function resolveTenant(db: Db, ev: InboundEvent, deps: IntegrationDeps): Promise<string | null> {
-  if (ev.provider === "whatsapp" && deps.config.whatsappPhoneNumberId && ev.accountId !== deps.config.whatsappPhoneNumberId) return null;
-  const [t] = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.slug, env.DEFAULT_TENANT_SLUG)).limit(1);
-  return t?.id ?? null;
+export async function resolveTenant(db: Db, ev: InboundEvent, deps: IntegrationDeps): Promise<TenantResolution> {
+  const provider = ACCOUNT_PROVIDER[ev.provider];
+  if (ev.accountId) {
+    const [hit] = await db
+      .select({ tenantId: channelAccounts.tenantId })
+      .from(channelAccounts)
+      .where(and(eq(channelAccounts.provider, provider), eq(channelAccounts.externalId, ev.accountId)))
+      .limit(1);
+    if (hit) return { tenantId: hit.tenantId, via: "account" };
+  }
+  const [registered] = await db.select({ id: channelAccounts.id }).from(channelAccounts).where(eq(channelAccounts.provider, provider)).limit(1);
+  if (registered) return { tenantId: null, reason: "Cuenta no registrada en channel_accounts" };
+  if (ev.provider === "whatsapp" && deps.config.whatsappPhoneNumberId && ev.accountId !== deps.config.whatsappPhoneNumberId) {
+    return { tenantId: null, reason: "Número distinto de WHATSAPP_PHONE_NUMBER_ID" };
+  }
+  const [fallback] = await db.select({ id: tenants.id }).from(tenants).where(eq(tenants.slug, env.DEFAULT_TENANT_SLUG)).limit(1);
+  if (!fallback) return { tenantId: null, reason: "No existe el tenant DEFAULT_TENANT_SLUG" };
+  if (deps.config.production) {
+    const [total] = await db.select({ n: count() }).from(tenants);
+    if (Number(total?.n ?? 0) !== 1) return { tenantId: null, reason: "Cuenta no registrada y hay más de un tenant" };
+  }
+  return { tenantId: fallback.id, via: "fallback" };
 }
 
 /* ───────────── recording (fast path, inside the HTTP request) ───────────── */
@@ -111,13 +143,23 @@ export const BACKSTOP_DELAY_MS = 2 * 60_000;
 /**
  * Stores each new event once (`webhook_events` unique on provider + event id) and enqueues a
  * backstop job that retries processing if the immediate attempt (after the response) fails.
- * Returns the ids of newly stored events; duplicates are skipped.
+ * Events no tenant owns are kept as `ignored` with only the account id (no message content).
+ * Returns the ids of newly stored, routable events; duplicates are skipped.
  */
 export async function recordEvents(db: Db, events: InboundEvent[], deps: IntegrationDeps): Promise<string[]> {
   const fresh: string[] = [];
   for (const ev of events) {
-    const tenantId = await resolveTenant(db, ev, deps);
-    if (!tenantId) continue;
+    const route = await resolveTenant(db, ev, deps);
+    if (route.tenantId === null) {
+      const [ignored] = await db
+        .insert(webhookEvents)
+        .values({ provider: ev.provider, eventId: ev.eventId, tenantId: null, payload: { accountId: ev.accountId }, status: "ignored", lastError: route.reason })
+        .onConflictDoNothing()
+        .returning({ id: webhookEvents.id });
+      if (ignored) log.warn("webhook for unrouted account", { provider: ev.provider, accountId: ev.accountId, reason: route.reason });
+      continue;
+    }
+    const tenantId = route.tenantId;
     const [row] = await db
       .insert(webhookEvents)
       .values({ provider: ev.provider, eventId: ev.eventId, tenantId, payload: ev })

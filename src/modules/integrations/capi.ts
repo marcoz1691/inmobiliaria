@@ -8,7 +8,8 @@ import type { JobRow } from "@/modules/jobs/queue";
 import { blockedReason, channelReady, type IntegrationDeps } from "./config";
 import { funnelUrl, tenantBaseUrl } from "./context";
 import { ExternalError } from "./http";
-import { buildCapiEvent, sendCapiEvent } from "./meta";
+import { buildCapiEvent, sendCapiEvent, type CapiEvent } from "./meta";
+import { clearClientNetwork } from "@/modules/funnels/client-data";
 
 const capiPayload = z.object({
   eventName: z.string().min(1).max(60),
@@ -16,6 +17,14 @@ const capiPayload = z.object({
   submissionId: z.uuid().nullish(),
   contactId: z.uuid().nullish(),
 });
+
+/** IP and user agent go to Meta but are not kept in `ad_events`. */
+function withoutClientNetwork(event: CapiEvent): CapiEvent {
+  const userData = { ...event.user_data };
+  delete userData.client_ip_address;
+  delete userData.client_user_agent;
+  return { ...event, user_data: userData };
+}
 
 /**
  * Conversions API. One row per (tenant, event_name, event_id) in `ad_events`: a retried job never
@@ -30,7 +39,15 @@ export async function handleMetaCapi(job: JobRow, db: Db, deps: IntegrationDeps)
   const prepared = await withTenant(db, tenantId, async (tx) => {
     const [sub] = p.submissionId
       ? await tx
-          .select({ fbc: funnelSubmissions.fbc, fbp: funnelSubmissions.fbp, contactId: funnelSubmissions.contactId, funnelSlug: funnels.slug, funnelName: funnels.name })
+          .select({
+            fbc: funnelSubmissions.fbc,
+            fbp: funnelSubmissions.fbp,
+            clientIp: funnelSubmissions.clientIp,
+            clientUa: funnelSubmissions.clientUa,
+            contactId: funnelSubmissions.contactId,
+            funnelSlug: funnels.slug,
+            funnelName: funnels.name,
+          })
           .from(funnelSubmissions)
           .innerJoin(funnels, eq(funnels.id, funnelSubmissions.funnelId))
           .where(and(eq(funnelSubmissions.tenantId, tenantId), eq(funnelSubmissions.id, p.submissionId)))
@@ -50,12 +67,14 @@ export async function handleMetaCapi(job: JobRow, db: Db, deps: IntegrationDeps)
       externalId: contact?.id,
       fbc: sub?.fbc,
       fbp: sub?.fbp,
+      clientIp: sub?.clientIp,
+      userAgent: sub?.clientUa,
       eventSourceUrl: funnelUrl(base, sub?.funnelSlug),
       customData: sub?.funnelName ? { content_name: sub.funnelName } : {},
     });
     await tx
       .insert(adEvents)
-      .values({ tenantId, eventName: p.eventName, eventId: p.eventId, contactId: contact?.id ?? null, payload: event, status: "pending" })
+      .values({ tenantId, eventName: p.eventName, eventId: p.eventId, contactId: contact?.id ?? null, payload: withoutClientNetwork(event), status: "pending" })
       .onConflictDoNothing();
     const [row] = await tx
       .select({ id: adEvents.id, status: adEvents.status })
@@ -64,7 +83,11 @@ export async function handleMetaCapi(job: JobRow, db: Db, deps: IntegrationDeps)
     return { event, row: row! };
   });
 
-  if (prepared.row.status === "sent") return { status: "done" };
+  const forget = () => (p.submissionId ? withTenant(db, tenantId, (tx) => clearClientNetwork(tx, tenantId, p.submissionId!, job.id)) : Promise.resolve());
+  if (prepared.row.status === "sent") {
+    await forget();
+    return { status: "done" };
+  }
   const mark = (status: string, response: unknown) =>
     withTenant(db, tenantId, (tx) => tx.update(adEvents).set({ status, response }).where(and(eq(adEvents.tenantId, tenantId), eq(adEvents.id, prepared.row.id))));
   try {
@@ -74,5 +97,6 @@ export async function handleMetaCapi(job: JobRow, db: Db, deps: IntegrationDeps)
     await mark("error", { error: err instanceof ExternalError ? err.message : "error de red" });
     throw err;
   }
+  await forget();
   return { status: "done" };
 }

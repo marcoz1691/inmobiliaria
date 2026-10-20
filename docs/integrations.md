@@ -24,6 +24,7 @@ El panel (`/panel/integraciones`) muestra este estado a partir de `integrations`
 - `vercel.json` llama a `/api/cron/jobs` cada 5 minutos con `Authorization: Bearer $CRON_SECRET`. En el plan Hobby de Vercel los crons solo corren una vez al día: para recordatorios de 1 h se necesita el plan Pro o un cron externo que llame a la misma URL con el header.
 - Manejadores registrados (`src/modules/jobs/handlers.ts`): `message.send`, `notify.agent.new_lead`, `notify.agent.booking`, `meta.capi`, `calendar.sync` y `meta.webhook` (reintento de webhooks).
 - Errores de red o del proveedor → reintento con backoff (máx. 5). Credencial ausente → `blocked`. Nunca se marca como enviado algo que no salió.
+- Cada corrida del runner borra además la IP y el user agent de los envíos del embudo con más de 7 días (`purged` en la respuesta del cron; ver "Conversions API").
 
 ## Email (Resend)
 
@@ -93,10 +94,20 @@ En el parámetro {{4}} de las citas va el enlace para gestionar la cita (si est�
     4. Envía la plantilla `lead_booking_invite` (email y/o WhatsApp) con el enlace del embudo activo (`/agenda/<slug>?utm_source=facebook&utm_medium=lead_ads`).
     Así el formulario instantáneo también termina en el calendario. Sin `META_PAGE_TOKEN`, el evento queda `blocked`.
   - **Consentimiento en Lead Ads:** se otorga en el formulario de Meta bajo la política de privacidad del anunciante; no se registra nuestro `CONSENT_TEXT`. Queda anotado en la actividad `lead_ads`. La política enlazada en el formulario debe cubrir el contacto por email y WhatsApp.
-- **Tenant (limitación del MVP):**
-  - Hay un solo número y una sola página por despliegue, atendidos por `DEFAULT_TENANT_SLUG`.
-  - Los mensajes a un `phone_number_id` distinto de `WHATSAPP_PHONE_NUMBER_ID` se ignoran.
-  - Para multi-tenant ver "Cambios solicitados".
+- **Tenant (`channel_accounts`):**
+  - Cada tenant registra sus cuentas de Meta: `whatsapp` (Phone number ID), `page` (Page ID; Messenger y Lead Ads) e `instagram` (ID de la cuenta profesional). Un ID pertenece a un solo tenant (`unique (provider, external_id)`).
+  - `resolveTenant` (`src/modules/integrations/meta-webhook.ts`) busca el ID receptor del evento con el rol del sistema, porque aún no hay tenant.
+  - **Fallback a `DEFAULT_TENANT_SLUG`**, solo mientras el enrutamiento no está configurado, para no entregar nunca un mensaje a un tenant que no es dueño de la cuenta:
+    - si el proveedor ya tiene alguna cuenta registrada, un ID desconocido se ignora;
+    - un `phone_number_id` distinto de `WHATSAPP_PHONE_NUMBER_ID` se ignora;
+    - en producción, solo si el tenant por defecto es el único tenant (despliegue de un solo agente). Con dos o más tenants, todo ID debe estar registrado.
+  - Un evento sin tenant se guarda en `webhook_events` con estado `ignored`, `tenant_id` nulo y solo el ID de la cuenta (sin el contenido del mensaje), y se registra un `warn` en el log. No se procesa.
+  - El seed registra `WHATSAPP_PHONE_NUMBER_ID` para `DEFAULT_TENANT_SLUG`. Las demás cuentas se gestionan con `src/modules/integrations/channel-accounts.ts` (`listChannelAccounts`, `registerChannelAccount`, `removeChannelAccount`; solo `owner`/`admin`, con audit log). Mientras no exista la pantalla en el panel:
+    ```sql
+    insert into channel_accounts (tenant_id, provider, external_id, label)
+    select id, 'page', '<PAGE_ID>', 'Página principal' from tenants where slug = 'piloto';
+    ```
+  - Pendiente: las respuestas por Messenger/Instagram y Lead Ads usan un único `META_PAGE_TOKEN` por despliegue. Para varias páginas hace falta un token por cuenta. Tampoco se verifica todavía con la Graph API que quien registra un ID sea su dueño, así que conviene que lo registre el operador de la plataforma.
 
 ## Conversions API
 
@@ -108,7 +119,14 @@ En el parámetro {{4}} de las citas va el enlace para gestionar la cita (si est�
   - `external_id`: hash del id de contacto.
   - `fbc` y `fbp` (de la URL o la cookie), `event_time`, `event_id`, `action_source: "website"`, `event_source_url` y `custom_data.content_name`.
   - Cada evento se registra en `ad_events`, único por `(tenant, event_name, event_id)`: un reintento nunca lo duplica.
-- IP y user agent no se envían todavía (ver "Cambios solicitados").
+  - `client_ip_address` y `client_user_agent`, sin hash como pide Meta.
+- **IP y user agent (datos personales):**
+  - Se guardan en `funnel_submissions.client_ip` / `client_ua` solo si la CAPI está conectada (`META_PIXEL_ID` y `META_CAPI_TOKEN`); sin ella no se recogen.
+  - Salen de los headers de la Server Action: `x-vercel-forwarded-for`, luego `x-real-ip` y luego `x-forwarded-for`. En Vercel los fija la plataforma (descarta lo que mande el cliente); fuera de Vercel solo son confiables detrás de un proxy que los sobrescriba. Se descartan los valores que no son IP y las de loopback.
+  - Al reservar se vuelven a capturar para el evento `Schedule`.
+  - Se borran apenas se envía con éxito el evento que los usa. Si se volvieron a capturar al reservar, el envío del `Lead` no los borra y esperan al `Schedule` (se compara `client_captured_at` con la creación del job).
+  - Lo que no llegue a enviarse (CAPI caída, job fallido) se borra a los 7 días con el barrido del runner.
+  - No se copian a `ad_events`: el payload guardado omite IP y user agent.
 
 ## Google Calendar
 
@@ -125,7 +143,7 @@ En el parámetro {{4}} de las citas va el enlace para gestionar la cita (si est�
   3. El callback verifica el `state` y que la sesión actual sea la misma, y guarda los tokens cifrados con AES-256-GCM en `calendar_connections`.
   4. Redirige a `/panel/integraciones?google=conectado|estado_invalido|cancelado|error|no_configurado|sin_perfil`.
 - **Sin conexión:** `calendar.sync` termina en `done` con la nota "Google Calendar no está conectado" en el timeline. La agenda propia sigue siendo la fuente de verdad.
-- **Disponibilidad con Google:** `googleBusyProvider(db, tenantId)` en `src/modules/integrations/google.ts`. Precarga las conexiones *antes* de la transacción de `availableSlots`/`bookSlot` y se pasa como `busyProvider`. Ver "Cambios solicitados".
+- **Disponibilidad con Google:** `googleBusyProvider(db, tenantId)` en `src/modules/integrations/google.ts`. Precarga las conexiones *antes* de la transacción de `availableSlots`/`bookSlot` y las Server Actions del embudo lo pasan como `busyProvider`.
 
 ## Asistente IA (`/api/chat`, `<ChatWidget />`)
 
@@ -143,48 +161,21 @@ En el parámetro {{4}} de las citas va el enlace para gestionar la cita (si est�
 - **Modelo:**
   - `claude-sonnet-5-5`, con `effort: "low"` para respuestas cortas y prompt cacheado.
   - Fallback del lado del servidor ante rechazos (`fallbacks: "default"`, beta `server-side-fallback-2026-07-01`), habilitado para los modelos que lo admiten. Si el modelo rechaza, el asistente responde con un mensaje neutro y ofrece derivar.
-- **Datos:** el contenido de la conversación se envía a Anthropic (proveedor de IA). La política de privacidad del sitio debe mencionarlo.
-- **Widget:** `import { ChatWidget } from "@/components/chat"`. Props: `whatsappHref` (enlace `wa.me` del agente) y `contactHref` (por defecto `/contacto`). No está montado en ningún layout: lo integra el orquestador.
+- **Datos:** el contenido de la conversación se envía a Anthropic (proveedor de IA). Lo explica `/privacidad` cuando la IA está conectada.
+- **Widget:** `import { ChatWidget } from "@/components/chat"`. Props: `whatsappHref` (enlace `wa.me` del agente) y `contactHref` (por defecto `/contacto`). Está montado en el layout del sitio público (`src/app/(public)/(site)/layout.tsx`).
 
-## Cambios solicitados (fuera de este módulo)
+## Política de privacidad (`/privacidad`)
 
-1. **Enlace de gestión en la confirmación (`bookSlot`, `src/modules/funnels/service.ts`).** El token en claro solo existe al reservar. Propuesta: cifrarlo y pasarlo en el payload de los jobs de la secuencia `booking_created`, sin guardarlo en claro en ninguna parte. El handler lo descifra; sin `ENCRYPTION_KEY`, el mensaje sale sin enlace.
-   ```diff
-   // src/modules/automations/sequences.ts
-    export type SequenceContext = {
-      …
-   +  /** encrypt(manageToken); only for booking_created. */
-   +  manageTokenEnc?: string | null;
-    };
-    …
-   -        payload: { channel: step.channel, template: step.template, contactId: ctx.contactId, dealId: ctx.dealId, bookingId: ctx.bookingId ?? null },
-   +        payload: { channel: step.channel, template: step.template, contactId: ctx.contactId, dealId: ctx.dealId, bookingId: ctx.bookingId ?? null,
-   +                   ...(ctx.manageTokenEnc ? { manageTokenEnc: ctx.manageTokenEnc } : {}) },
+- Se arma con lo que el sistema recoge de verdad y muestra cada sección según las integraciones conectadas (Píxel, CAPI, IA, email, WhatsApp, Google).
+- El responsable sale del perfil del agente. Razón social, RUC o cédula, dirección y plazo máximo de conservación no existen en el perfil: se muestran como "Pendiente de completar".
+- Fuera de producción se ve un aviso de "borrador pendiente de revisión legal". Antes de lanzar, un abogado debe revisar el texto y completar esos campos.
 
-   // src/modules/funnels/service.ts (bookSlot)
-   +import { encrypt } from "@/lib/crypto";
-    …
-    await scheduleSequence(tx, "booking_created", {
-      …
-      now,
-   +  manageTokenEnc: process.env.ENCRYPTION_KEY ? encrypt(manageToken) : null,
-    });
-   ```
-2. **Busy de Google en las reservas.** En las Server Actions del embudo, pasa el proveedor a `availableSlots` y a `bookSlot`:
-   ```ts
-   busyProvider: await googleBusyProvider(await getDb(), tenant.id)
-   ```
-   Hay que llamarlo antes; la función devuelve `undefined` si no hay conexión.
-3. **IP y user agent para la CAPI.** Propuesta: añadir `client_ip text` y `client_ua text` en `funnel_submissions` y llenarlos en `submitFunnel` desde los headers de la acción. Son datos personales: borrarlos tras enviar el evento (o a los 7 días) y mencionarlos en la política de privacidad. El handler ya acepta `clientIp`/`userAgent` en `buildCapiEvent`.
-4. **Multi-tenant en webhooks: tabla `channel_accounts`.**
-   ```ts
-   export const channelAccounts = pgTable("channel_accounts", {
-     id: id(),
-     tenantId: tenantId(),
-     provider: text("provider").notNull(),        // whatsapp | page | instagram
-     externalId: text("external_id").notNull(),  // phone_number_id, page_id, ig id
-     createdAt: createdAt(),
-   }, (t) => [uniqueIndex("channel_accounts_provider_external_uq").on(t.provider, t.externalId), tenantIsolation("channel_accounts")]);
-   ```
-   Migración: `npm run db:generate` y `GRANT SELECT ON channel_accounts TO app_user`. La búsqueda la hace el sistema (owner) en `resolveTenant`, que hoy usa `DEFAULT_TENANT_SLUG`.
-5. **Montar `<ChatWidget whatsappHref=… />`** en el layout público (orquestador o agente del sitio público).
+## Cambios solicitados
+
+Todos resueltos. Se dejan como registro:
+
+1. **Enlace de gestión en la confirmación** — resuelto. `bookSlot` cifra el token (`encrypt`, requiere `ENCRYPTION_KEY`) y lo pasa como `manageTokenEnc` en el payload de la secuencia `booking_created`; `message.send` lo descifra. Sin `ENCRYPTION_KEY`, el mensaje sale sin enlace.
+2. **Busy de Google en las reservas** — resuelto. `src/app/(public)/(focus)/agenda/[slug]/actions.ts` pasa `googleBusyProvider(...)` a `availableSlots` y a `bookSlot`.
+3. **IP y user agent para la CAPI** — resuelto (migración `0004_channel_accounts_and_capi_client.sql`). Ver "Conversions API".
+4. **Multi-tenant en webhooks (`channel_accounts`)** — resuelto (misma migración, con `GRANT` a `app_user`). Ver "Webhooks de Meta → Tenant". Falta la pantalla del panel para gestionar las cuentas.
+5. **Montar `<ChatWidget />`** — resuelto en el layout del sitio público.

@@ -1,10 +1,12 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { z } from "zod";
+import { integrations } from "@/env";
 import { AppError } from "@/lib/errors";
 import { errorInfo, log } from "@/lib/logger";
 import { availableSlots, bookSlot, getActiveFunnel, submissionSchema, submitFunnel } from "@/modules/funnels/service";
+import { clientNetworkFromHeaders } from "@/modules/funnels/client-data";
 import { formatAppointment, groupSlotsByDay } from "@/components/funnel/slots";
 import { MEETING_LABEL, type BookResult, type FunnelSubmitInput, type FunnelSubmitResult, type Schedule } from "@/components/funnel/types";
 import { getCurrentTenant } from "@/server/tenant";
@@ -17,6 +19,11 @@ const slugSchema = z.string().regex(/^[a-z0-9-]{1,60}$/);
 /** External busy times (Google Calendar) when the agent connected it; resolved outside the booking transaction. */
 async function busy(tenantId: string) {
   return googleBusyProvider(await getDb(), tenantId);
+}
+
+/** Visitor IP/UA for the Conversions API; not collected at all while CAPI is not connected. */
+async function clientNetwork() {
+  return integrations.metaCapi ? clientNetworkFromHeaders(await headers()) : null;
 }
 
 async function schedule(tenantId: string, funnelId: string): Promise<Schedule> {
@@ -69,7 +76,7 @@ export async function submitFunnelAction(slug: string, input: FunnelSubmitInput)
   }
 
   try {
-    const outcome = await submitFunnel(ctx.tenant.id, ctx.funnel.id, parsed.data);
+    const outcome = await submitFunnel(ctx.tenant.id, ctx.funnel.id, parsed.data, { client: await clientNetwork() });
     if (!outcome.qualified) return { ok: true, qualified: false };
     return {
       ok: true,
@@ -101,6 +108,7 @@ export async function bookSlotAction(slug: string, input: { submissionId: string
       pass: parsed.data.pass,
       startsAt: new Date(parsed.data.startsAt),
       busyProvider: await busy(ctx.tenant.id),
+      client: await clientNetwork(),
     });
     return {
       ok: true,

@@ -5,6 +5,8 @@ export type FetchLike = (input: string, init?: RequestInit) => Promise<Response>
 /** Credentials and settings the adapters need. Built from `env`; tests inject their own. */
 export type IntegrationConfig = {
   appUrl: string;
+  /** NODE_ENV === "production". Webhook routing is strict there (see `resolveTenant`). */
+  production?: boolean;
   resendApiKey?: string;
   emailFrom?: string;
   whatsappToken?: string;
@@ -25,6 +27,7 @@ export type IntegrationDeps = { fetch: FetchLike; config: IntegrationConfig; now
 export function configFromEnv(): IntegrationConfig {
   return {
     appUrl: env.APP_URL,
+    production: env.NODE_ENV === "production",
     resendApiKey: env.RESEND_API_KEY,
     emailFrom: env.EMAIL_FROM,
     whatsappToken: env.WHATSAPP_TOKEN,
