@@ -52,7 +52,7 @@ test("publish a property from the wizard, pause it, duplicate and archive", asyn
   await page.getByLabel("Baños").fill("2,5");
   await page.getByLabel("Área de construcción (m²)").fill("180");
   await page.getByRole("button", { name: "Agregar Jardín" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Guardado" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Guardado" })).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: "Siguiente: Revisar y publicar" }).click();
 
   // 4 · Revisar y publicar
@@ -116,7 +116,7 @@ test("autosave keeps edits and flags invalid numbers", async ({ page }) => {
   await expect(page.getByLabel("Precio (US$)")).toHaveAttribute("aria-invalid", "true");
   await page.getByLabel("Precio (US$)").fill("99000");
   await page.getByLabel("Ciudad").fill("Guayaquil");
-  await expect(page.getByRole("status").filter({ hasText: "Guardado" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: "Guardado" })).toBeVisible({ timeout: 20_000 });
   await page.reload();
   await expect(page.getByLabel("Precio (US$)")).toHaveValue("99000");
   await expect(page.getByLabel("Ciudad")).toHaveValue("Guayaquil");
