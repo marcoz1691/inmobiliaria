@@ -10,5 +10,12 @@ export default defineConfig({
     include: ["src/**/*.test.ts", "test/**/*.test.ts"],
     testTimeout: 30_000,
     hookTimeout: 60_000,
+    coverage: {
+      provider: "v8",
+      include: ["src/modules/**/*.ts", "src/server/**/*.ts"],
+      exclude: ["**/*.test.ts", "src/server/db/schema.ts"],
+      reporter: ["text-summary", "text", "html", "json-summary"],
+      reportsDirectory: "coverage",
+    },
   },
 });
