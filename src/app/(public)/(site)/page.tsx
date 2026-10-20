@@ -10,8 +10,9 @@ import { agentTagline, getSite } from "../_lib/site";
 
 const container = "mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12";
 
-// Editorial rhythm: lead item 6 columns, then 3 + 3, then rows of three.
-const featuredSpan = (i: number) => (i === 0 ? "lg:col-span-6" : i < 3 ? "lg:col-span-3" : "lg:col-span-4");
+// Editorial rhythm: lead item 6 columns, then 3 + 3, then rows of three. One or two items split evenly.
+const featuredSpan = (i: number, n: number) =>
+  n <= 2 ? "lg:col-span-6" : i === 0 ? "lg:col-span-6" : i < 3 ? "lg:col-span-3" : "lg:col-span-4";
 
 export default async function HomePage() {
   const site = await getSite();
@@ -59,11 +60,11 @@ export default async function HomePage() {
           {featured.length > 0 ? (
             <ul className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-12 lg:gap-x-8">
               {featured.map((p, i) => (
-                <li key={p.slug} className={cn(featuredSpan(i), i === 0 && "sm:col-span-2")}>
+                <li key={p.slug} className={cn(featuredSpan(i, featured.length), i === 0 && featured.length !== 2 && "sm:col-span-2")}>
                   <PropertyCard
                     property={p}
                     href={`/propiedades/${p.slug}`}
-                    feature={i === 0}
+                    feature={i === 0 && featured.length !== 2}
                     sizes={i === 0 ? "(min-width: 1024px) 50vw, 100vw" : "(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"}
                   />
                 </li>
