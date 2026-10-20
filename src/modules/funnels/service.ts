@@ -17,7 +17,7 @@ import {
 } from "@/server/db/schema";
 import type { MemberContext } from "@/server/session";
 import { AppError, notFound } from "@/lib/errors";
-import { randomToken, safeEqual, sha256 } from "@/lib/crypto";
+import { encrypt, randomToken, safeEqual, sha256 } from "@/lib/crypto";
 import { audit } from "@/modules/audit/audit";
 import { logActivity, upsertContact } from "@/modules/crm/service";
 import { enqueue, cancelPending } from "@/modules/jobs/queue";
@@ -256,6 +256,8 @@ export async function bookSlot(tenantId: string, input: BookInput): Promise<{ bo
       bookingId: booking!.id,
       bookingStart: booking!.startsAt,
       now,
+      // The plain token exists only now; messages carry it encrypted (needs ENCRYPTION_KEY).
+      payload: process.env.ENCRYPTION_KEY ? { manageTokenEnc: encrypt(manageToken) } : undefined,
     });
     await enqueue(tx, { tenantId, type: "calendar.sync", idempotencyKey: `booking:${booking!.id}:calendar`, payload: { bookingId: booking!.id, action: "create" } });
     await enqueue(tx, {

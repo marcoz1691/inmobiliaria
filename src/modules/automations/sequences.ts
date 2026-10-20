@@ -13,6 +13,8 @@ export type SequenceContext = {
   bookingId?: string | null;
   bookingStart?: Date | null;
   now?: Date;
+  /** Extra fields merged into every job payload (e.g. the encrypted booking manage token). */
+  payload?: Record<string, unknown>;
 };
 
 /** Defaults installed for every new funnel. Templates live in src/modules/automations/templates.ts. */
@@ -78,7 +80,14 @@ export async function scheduleSequence(tx: Tx, trigger: SequenceTrigger, ctx: Se
         type: "message.send",
         runAt,
         idempotencyKey: `${scope}:seq:${seq.id}:${step.id}`,
-        payload: { channel: step.channel, template: step.template, contactId: ctx.contactId, dealId: ctx.dealId, bookingId: ctx.bookingId ?? null },
+        payload: {
+          ...ctx.payload,
+          channel: step.channel,
+          template: step.template,
+          contactId: ctx.contactId,
+          dealId: ctx.dealId,
+          bookingId: ctx.bookingId ?? null,
+        },
       });
       count++;
     }
