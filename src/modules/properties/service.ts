@@ -415,3 +415,90 @@ export async function listPublicSlugs(tenantId: string) {
       .where(and(eq(properties.tenantId, tenantId), inArray(properties.status, [...PUBLIC_STATUSES]))),
   );
 }
+
+/* ───────────── panel: additions (round 2) ───────────── */
+
+/** Updates the alt text of one photo (empty → null, the public site then falls back to a generic alt). */
+export async function updatePhotoAlt(m: MemberContext, propertyId: string, mediaId: string, alt: string): Promise<void> {
+  const value = alt.trim().slice(0, 200) || null;
+  await run(m.tenantId, async (tx) => {
+    await loadEditable(tx, m, propertyId);
+    const [row] = await tx
+      .update(propertyMedia)
+      .set({ alt: value })
+      .where(and(eq(propertyMedia.tenantId, m.tenantId), eq(propertyMedia.propertyId, propertyId), eq(propertyMedia.id, mediaId)))
+      .returning({ id: propertyMedia.id });
+    if (!row) throw notFound("Foto");
+  });
+}
+
+export type ImportedDraftInput = {
+  title: string;
+  values: Omit<Partial<typeof properties.$inferInsert>, "id" | "tenantId" | "slug" | "status" | "createdBy" | "agentId" | "publishedAt">;
+  fieldConfidence: Record<string, "high" | "low" | "missing">;
+  reviewNotes: string | null;
+  sourceImportId: string;
+};
+
+/**
+ * Draft created from a PDF import. Always `needsReview: true`, so `publishProblems` blocks
+ * publishing until the agent confirms the data (and an appraisal price stays unpublishable).
+ */
+export async function createImportedDraft(m: MemberContext, input: ImportedDraftInput): Promise<PropertyRow> {
+  return run(m.tenantId, async (tx) => {
+    const title = input.title.trim().slice(0, 140);
+    const slug = await uniqueSlug(tx, m.tenantId, title || `borrador-${Date.now().toString(36)}`);
+    const [row] = await tx
+      .insert(properties)
+      .values({
+        ...input.values,
+        tenantId: m.tenantId,
+        slug,
+        title,
+        status: "draft",
+        agentId: m.agentId,
+        createdBy: m.userId,
+        needsReview: true,
+        fieldConfidence: input.fieldConfidence,
+        reviewNotes: input.reviewNotes,
+        sourceImportId: input.sourceImportId,
+      })
+      .returning();
+    await audit(tx, {
+      tenantId: m.tenantId,
+      actorUserId: m.userId,
+      action: "property.create",
+      entityType: "property",
+      entityId: row!.id,
+      diff: { sourceImportId: input.sourceImportId },
+    });
+    return row!;
+  });
+}
+
+/** Minimal fields of every non-archived property of the tenant, for duplicate detection on import. */
+export async function listDedupeCandidates(m: MemberContext) {
+  return run(m.tenantId, (tx) =>
+    tx
+      .select({
+        id: properties.id,
+        title: properties.title,
+        address: properties.address,
+        city: properties.city,
+        landArea: properties.landArea,
+        builtArea: properties.builtArea,
+        price: properties.price,
+        status: properties.status,
+        sourceImportId: properties.sourceImportId,
+      })
+      .from(properties)
+      .where(and(eq(properties.tenantId, m.tenantId), ne(properties.status, "archived"))),
+  );
+}
+
+/** Drafts (or later states) created from one import, visible to this member. */
+export async function listByImport(m: MemberContext, importId: string) {
+  const rows = await listForPanel(m, {});
+  const archived = await listForPanel(m, { status: "archived" });
+  return [...rows, ...archived].filter((r) => r.sourceImportId === importId);
+}
