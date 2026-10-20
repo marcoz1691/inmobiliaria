@@ -2,17 +2,20 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { env } from "@/env";
 import { AgentHero } from "@/components/public/AgentHero";
-import { OPERATION_LABEL, formatLocation } from "@/components/public/format";
 import { PropertyCard } from "@/components/public/PropertyCard";
 import { PropertyFacts } from "@/components/public/PropertyFacts";
 import { PropertyGallery } from "@/components/public/PropertyGallery";
+import { PropertySpotlight } from "@/components/public/PropertySpotlight";
+import { ChipLinks, SegmentedLinks } from "@/components/public/QuickFilters";
 import { SiteFooter } from "@/components/public/SiteFooter";
 import { SiteHeader, type NavItem } from "@/components/public/SiteHeader";
 import { WhatsAppButton } from "@/components/public/WhatsAppButton";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { MoreLink } from "@/components/ui/MoreLink";
 import { Price } from "@/components/ui/Price";
+import { Reveal } from "@/components/ui/Reveal";
 import { Skeleton } from "@/components/ui/Skeleton";
 import { demoProperties } from "./demo-data";
 
@@ -32,10 +35,21 @@ const AGENT = {
 
 const NAV: NavItem[] = [
   { label: "Propiedades", href: "#destacadas" },
-  { label: "Ficha", href: "#ficha" },
+  { label: "Sistema", href: "#sistema" },
   { label: "Estados", href: "#estados" },
   { label: "Contacto", href: "#contacto" },
 ];
+
+const SWATCHES = [
+  ["paper", "bg-paper border border-line"],
+  ["sand", "bg-sand"],
+  ["mist", "bg-mist"],
+  ["ink", "bg-ink"],
+  ["night", "bg-night"],
+  ["navy", "bg-navy"],
+  ["link", "bg-link"],
+  ["clay", "bg-clay"],
+] as const;
 
 const container = "mx-auto max-w-7xl px-5 sm:px-8 lg:px-12";
 
@@ -51,13 +65,7 @@ export default function DesignDemoPage() {
         Página interna de diseño. Los datos marcados <strong className="font-medium text-ink">[Ejemplo]</strong>{" "}
         son ficticios.
       </p>
-      <SiteHeader
-        name={AGENT.name}
-        tagline={AGENT.role}
-        homeHref="/dev/design"
-        nav={NAV}
-        ctaHref="#contacto"
-      />
+      <SiteHeader name={AGENT.name} tagline={AGENT.tagline} homeHref="/dev/design" nav={NAV} ctaHref="#contacto" />
 
       <main id="contenido" className="flex-1">
         <AgentHero
@@ -65,173 +73,164 @@ export default function DesignDemoPage() {
           role={AGENT.role}
           eyebrow={AGENT.tagline}
           headline="Decisiones grandes, con información clara."
-          intro={
-            <p>
-              [Ejemplo] Te acompaño desde la primera visita hasta la firma, con precios
-              comparados y documentos revisados antes de que tomes una decisión.
-            </p>
-          }
+          intro={<p>[Ejemplo] Te acompaño desde la primera visita hasta la firma.</p>}
           areas={["Cumbayá", "Tumbaco", "Quito norte", "Valle de los Chillos"]}
           photoSrc="/dev-assets/agente-hero.webp"
           photoAlt="Retrato del agente con traje azul marino y corbata gris en una oficina luminosa"
           whatsapp={AGENT.whatsapp}
           ctaHref="#contacto"
+          secondaryHref="#destacadas"
         />
 
-        {/* Featured */}
-        <section id="destacadas" aria-labelledby="destacadas-title" className="border-t border-line py-16 lg:py-24">
+        <section id="destacadas" aria-labelledby="destacadas-title" className="bg-sand py-20 lg:py-28">
           <div className={container}>
-            <div className="flex flex-wrap items-end justify-between gap-4">
-              <div>
-                <p className="text-eyebrow font-medium text-clay uppercase">Selección</p>
-                <h2 id="destacadas-title" className="mt-3 font-display text-display-lg text-ink">
-                  Propiedades destacadas
-                </h2>
-              </div>
-              <Button href="#ficha" variant="ghost" className="-mx-5">
-                Ver todas las propiedades
-              </Button>
-            </div>
-
-            <div className="mt-10 grid gap-x-8 gap-y-12 sm:grid-cols-2 lg:mt-14 lg:grid-cols-12">
-              <PropertyCard
-                property={lead}
-                href="#ficha"
-                feature
-                className="sm:col-span-2 lg:col-span-6"
-                sizes="(min-width: 1280px) 600px, (min-width: 1024px) 50vw, 100vw"
-              />
-              {rest.map((p) => (
-                <PropertyCard
-                  key={p.slug}
-                  property={p}
-                  href="#ficha"
-                  className="lg:col-span-3"
-                  sizes="(min-width: 1280px) 300px, (min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw"
-                />
+            <Reveal className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
+              <h2 id="destacadas-title" className="font-display text-display-lg text-ink">
+                Propiedades destacadas.
+              </h2>
+              <MoreLink href="#sistema">Ver todas las propiedades</MoreLink>
+            </Reveal>
+            <ul className="mt-10 grid gap-6 sm:grid-cols-2 lg:mt-14 lg:grid-cols-12">
+              <li className="sm:col-span-2 lg:col-span-7 lg:row-span-2">
+                <PropertyCard property={lead} href="#sistema" feature sizes="(min-width: 1024px) 58vw, 100vw" />
+              </li>
+              {rest.map((p, i) => (
+                <li key={p.slug} className="lg:col-span-5">
+                  <Reveal delay={i * 90} className="h-full">
+                    <PropertyCard property={p} href="#sistema" sizes="(min-width: 1024px) 40vw, (min-width: 640px) 50vw, 100vw" />
+                  </Reveal>
+                </li>
               ))}
-            </div>
+            </ul>
           </div>
         </section>
 
-        {/* Property detail */}
-        <section id="ficha" aria-labelledby="ficha-title" className="border-t border-line bg-white py-16 lg:py-24">
-          <div className={container}>
-            <div className="flex flex-wrap items-center gap-3">
-              <p className="text-eyebrow text-ink-muted uppercase">
-                {lead.propertyType} · {OPERATION_LABEL[lead.operation]}
-              </p>
-              <Badge status={lead.status} />
-            </div>
-            <h2 id="ficha-title" className="mt-4 max-w-3xl font-display text-display-lg text-balance text-ink">
-              {lead.title}
-            </h2>
-            <p className="mt-3 text-base text-ink-muted">{formatLocation(lead)} · ubicación aproximada</p>
+        <PropertySpotlight property={lead} href="#sistema" bookingHref="#contacto" />
 
-            <div className="mt-8 lg:mt-10">
+        <section id="sistema" aria-labelledby="sistema-title" className="py-20 lg:py-28">
+          <div className={container}>
+            <p className="text-eyebrow text-clay">Sistema</p>
+            <h2 id="sistema-title" className="mt-3 font-display text-display-lg text-ink">
+              Tipografía, color y controles.
+            </h2>
+
+            <div className="mt-12 grid gap-12 lg:grid-cols-2">
+              <div className="flex flex-col gap-4">
+                <p className="font-display text-display-xl text-ink">Display XL</p>
+                <p className="font-display text-display-lg text-ink">Display LG</p>
+                <p className="font-display text-display-md text-ink">Display MD</p>
+                <p className="text-headline text-ink">Headline</p>
+                <p className="text-lead text-ink-muted">Lead: texto de apoyo bajo un titular.</p>
+                <p className="text-eyebrow text-clay">Eyebrow</p>
+              </div>
+              <div className="flex flex-col gap-8">
+                <ul className="grid grid-cols-4 gap-3">
+                  {SWATCHES.map(([name, cls]) => (
+                    <li key={name}>
+                      <span className={`block aspect-square rounded-sm ${cls}`} />
+                      <span className="mt-1 block text-xs text-ink-muted">{name}</span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-3">
+                  <Button>Primario</Button>
+                  <Button variant="secondary">Secundario</Button>
+                  <Button variant="ghost">Fantasma</Button>
+                  <MoreLink href="#sistema">Ver más</MoreLink>
+                </div>
+                <div className="flex flex-wrap items-center gap-3 rounded-md bg-night p-5">
+                  <Button variant="inverse">Inverso</Button>
+                  <MoreLink href="#sistema" tone="dark">
+                    Ver más
+                  </MoreLink>
+                </div>
+                <SegmentedLinks
+                  label="Tipo de operación"
+                  options={[
+                    { label: "Todas", href: "#sistema", active: true },
+                    { label: "Venta", href: "#sistema?venta", active: false },
+                    { label: "Alquiler", href: "#sistema?alquiler", active: false },
+                  ]}
+                />
+                <ChipLinks
+                  label="Tipo de propiedad"
+                  options={[
+                    { label: "Todos los tipos", href: "#sistema", active: false },
+                    { label: "Casa", href: "#sistema?casa", active: true },
+                    { label: "Departamento", href: "#sistema?depa", active: false },
+                    { label: "Terreno", href: "#sistema?terreno", active: false },
+                  ]}
+                />
+                <div className="flex flex-wrap gap-2">
+                  <Badge status="available" />
+                  <Badge status="reserved" />
+                  <Badge status="sold" />
+                  <Badge status="rented" />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-20">
               <PropertyGallery images={lead.images} title={lead.title} />
             </div>
-
-            <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-12 lg:gap-16">
-              <aside
-                aria-label="Precio y contacto"
-                className="lg:sticky lg:top-28 lg:col-span-4 lg:col-start-9 lg:row-start-1 lg:self-start"
-              >
-                <p className="text-sm text-ink-muted">Precio de venta</p>
-                <Price
-                  amount={lead.price}
-                  priceKind={lead.priceKind}
-                  className="mt-1 block font-display text-display-md text-ink"
-                />
-                <div className="mt-6 flex flex-col gap-3">
+            <div className="mt-12 grid gap-12 lg:grid-cols-12 lg:gap-16">
+              <div className="lg:col-span-7">
+                <PropertyFacts property={lead} headingLevel={3} />
+              </div>
+              <aside aria-label="Precio y contacto" className="lg:col-span-4 lg:col-start-9">
+                <div className="flex flex-col gap-4 rounded-lg bg-sand p-6 sm:p-8">
+                  <p className="text-[0.9375rem] text-ink-muted">Precio</p>
+                  <Price amount={lead.price} priceKind={lead.priceKind} className="-mt-3 block font-display text-display-md" />
                   <Button href="#contacto" size="lg">
                     Agenda una visita
                   </Button>
-                  <WhatsAppButton
-                    phone={AGENT.whatsapp}
-                    size="lg"
-                    label="Pregunta por WhatsApp"
-                    message={`Hola ${AGENT.name}, me interesa "${lead.title}" (ref. ${lead.slug}). ¿Podemos coordinar una visita?`}
-                  />
+                  <WhatsAppButton phone={AGENT.whatsapp} size="lg" message={`Hola ${AGENT.name}, me interesa "${lead.title}".`} />
                 </div>
-                <p className="mt-4 text-sm text-ink-muted">Ref. {lead.slug}</p>
               </aside>
-
-              <div className="lg:col-span-8 lg:row-start-1">
-                <p className="max-w-2xl text-lg leading-relaxed text-pretty text-ink">
-                  [Ejemplo] Casa de dos plantas en una calle tranquila, con espacios sociales
-                  abiertos al jardín y dormitorios separados del área de estar.
-                </p>
-                <PropertyFacts property={lead} headingLevel={3} className="mt-12" />
-              </div>
             </div>
           </div>
         </section>
 
-        {/* States */}
-        <section id="estados" aria-labelledby="estados-title" className="border-t border-line py-16 lg:py-24">
+        <section id="estados" aria-labelledby="estados-title" className="bg-sand py-20 lg:py-28">
           <div className={container}>
-            <p className="text-eyebrow font-medium text-clay uppercase">Sistema</p>
-            <h2 id="estados-title" className="mt-3 font-display text-display-lg text-ink">
-              Estados
+            <h2 id="estados-title" className="font-display text-display-lg text-ink">
+              Estados.
             </h2>
-
-            <div className="mt-10 grid gap-x-12 gap-y-16 lg:grid-cols-2">
-              <div>
-                <h3 className="text-sm font-medium text-ink-muted">Carga</h3>
-                <div aria-busy="true" className="mt-4 grid grid-cols-2 gap-6">
-                  <span role="status" className="sr-only">
-                    Cargando propiedades…
-                  </span>
-                  {[0, 1].map((i) => (
-                    <div key={i}>
-                      <Skeleton className="aspect-[4/3]" />
-                      <Skeleton className="mt-4 h-3 w-1/3" />
-                      <Skeleton className="mt-3 h-5 w-4/5" />
-                      <Skeleton className="mt-2 h-3 w-1/2" />
-                    </div>
-                  ))}
-                </div>
+            <div className="mt-10 grid gap-6 lg:grid-cols-2">
+              <div aria-busy="true" className="grid grid-cols-2 gap-4 rounded-md bg-white p-6">
+                <span role="status" className="sr-only">
+                  Cargando propiedades…
+                </span>
+                {[0, 1].map((i) => (
+                  <div key={i}>
+                    <Skeleton className="aspect-[4/3]" />
+                    <Skeleton className="mt-4 h-3 w-1/3" />
+                    <Skeleton className="mt-3 h-5 w-4/5" />
+                  </div>
+                ))}
               </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-ink-muted">Vacío</h3>
-                <EmptyState
-                  className="mt-4"
-                  headingLevel={4}
-                  title="No hay propiedades con estos filtros"
-                  description="Prueba con otro sector o amplía el rango de precio. También puedes escribirme y te aviso cuando aparezca algo así."
-                  action={<Button variant="secondary">Quitar filtros</Button>}
-                />
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-ink-muted">Error</h3>
-                <EmptyState
-                  className="mt-4"
-                  headingLevel={4}
-                  tone="error"
-                  title="No pudimos cargar las propiedades"
-                  description="Revisa tu conexión e inténtalo otra vez. Si el problema sigue, escríbeme por WhatsApp."
-                  action={<Button variant="secondary">Reintentar</Button>}
-                />
-              </div>
-
-              <div>
-                <h3 className="text-sm font-medium text-ink-muted">Confirmación</h3>
-                <EmptyState
-                  className="mt-4"
-                  headingLevel={4}
-                  tone="success"
-                  title="Recibí tu solicitud de cita"
-                  description="[Ejemplo] Te escribiré para confirmar el día y la hora. No necesitas hacer nada más."
-                  action={
-                    <Button href="#destacadas" variant="ghost" className="-mx-5">
-                      Seguir viendo propiedades
-                    </Button>
-                  }
-                />
-              </div>
+              <EmptyState
+                surface="white"
+                headingLevel={3}
+                title="No hay propiedades con estos filtros"
+                description="Prueba con otro sector o amplía el rango de precio."
+                action={<Button variant="secondary">Quitar filtros</Button>}
+              />
+              <EmptyState
+                surface="white"
+                headingLevel={3}
+                tone="error"
+                title="No pudimos cargar las propiedades"
+                description="Revisa tu conexión e inténtalo otra vez."
+                action={<Button variant="secondary">Reintentar</Button>}
+              />
+              <EmptyState
+                surface="white"
+                headingLevel={3}
+                tone="success"
+                title="Recibí tu solicitud de cita"
+                description="[Ejemplo] Te escribiré para confirmar el día y la hora."
+              />
             </div>
           </div>
         </section>

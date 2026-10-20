@@ -11,6 +11,8 @@ type EmptyStateProps = {
   tone?: EmptyStateTone;
   /** Heading level, so the state fits the surrounding outline. */
   headingLevel?: 2 | 3 | 4;
+  /** Panel color: `white` when the state sits on a sand section. */
+  surface?: "sand" | "white";
   className?: string;
 };
 
@@ -40,12 +42,13 @@ export function EmptyState({
   action,
   tone = "empty",
   headingLevel = 3,
+  surface = "sand",
   className,
 }: EmptyStateProps) {
   const t = TONE[tone];
   const Heading = `h${headingLevel}` as const;
   return (
-    <div role={t.role} className={cn("rounded-md bg-sand p-6 sm:p-8", className)}>
+    <div role={t.role} className={cn("rounded-md p-6 sm:p-8", surface === "white" ? "bg-white" : "bg-sand", className)}>
       <span aria-hidden="true" className={cn("inline-flex size-12 items-center justify-center rounded-full", t.disc)}>
         <svg
           viewBox="0 0 24 24"

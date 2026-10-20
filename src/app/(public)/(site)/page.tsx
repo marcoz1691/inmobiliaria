@@ -76,7 +76,8 @@ export default async function HomePage() {
             </ul>
           ) : (
             <EmptyState
-              className="mt-10 max-w-2xl bg-white"
+              className="mt-10 max-w-2xl"
+              surface="white"
               headingLevel={3}
               title="Aún no hay propiedades publicadas"
               description="Estamos preparando las primeras fichas. Mientras tanto, cuéntame qué buscas y te aviso cuando haya opciones."
