@@ -24,6 +24,7 @@ import { enqueue, cancelPending } from "@/modules/jobs/queue";
 import { installDefaultSequences, scheduleSequence } from "@/modules/automations/sequences";
 import { computeSlots, type Interval, type SlotQuery } from "@/modules/scheduling/slots";
 import { FUNNEL_TEMPLATES, scoreSubmission, type Answers } from "./scoring";
+import { clientNetworkColumns, type ClientNetwork } from "./client-data";
 
 export type FunnelRow = typeof funnels.$inferSelect;
 export type BookingRow = typeof bookings.$inferSelect;
@@ -72,7 +73,13 @@ export type SubmissionOutcome =
   | { qualified: true; submissionId: string; pass: string }
   | { qualified: false; submissionId: string; reason: string | null };
 
-export async function submitFunnel(tenantId: string, funnelId: string, input: SubmissionInput): Promise<SubmissionOutcome> {
+/** `client`: IP/UA for the Conversions API, only when CAPI is connected (see ./client-data.ts). */
+export async function submitFunnel(
+  tenantId: string,
+  funnelId: string,
+  input: SubmissionInput,
+  opts: { client?: ClientNetwork | null } = {},
+): Promise<SubmissionOutcome> {
   return run(tenantId, async (tx) => {
     const [funnel] = await tx
       .select()
@@ -114,6 +121,7 @@ export async function submitFunnel(tenantId: string, funnelId: string, input: Su
         fbc: input.fbc ?? null,
         fbp: input.fbp ?? null,
         clientEventId: input.eventId ?? null,
+        ...clientNetworkColumns(opts.client),
       })
       .returning();
     await logActivity(tx, {
@@ -193,7 +201,7 @@ export async function availableSlots(tenantId: string, funnelId: string, opts: {
   });
 }
 
-export type BookInput = { submissionId: string; pass: string; startsAt: Date; now?: Date; busyProvider?: BusyProvider };
+export type BookInput = { submissionId: string; pass: string; startsAt: Date; now?: Date; busyProvider?: BusyProvider; client?: ClientNetwork | null };
 
 export async function bookSlot(tenantId: string, input: BookInput): Promise<{ booking: BookingRow; manageToken: string }> {
   if (!safeEqual(bookingPass(input.submissionId), input.pass)) throw new AppError("forbidden", "Completa el formulario antes de agendar");
@@ -241,6 +249,13 @@ export async function bookSlot(tenantId: string, input: BookInput): Promise<{ bo
       })
       .returning();
     await tx.update(deals).set({ stage: "booked" }).where(eq(deals.id, sub.dealId));
+    // Fresh IP/UA for the "Schedule" event; the "Lead" one may have cleared them already.
+    if (input.client) {
+      await tx
+        .update(funnelSubmissions)
+        .set(clientNetworkColumns(input.client))
+        .where(and(eq(funnelSubmissions.tenantId, tenantId), eq(funnelSubmissions.id, sub.id)));
+    }
     await logActivity(tx, {
       tenantId,
       contactId: sub.contactId,
