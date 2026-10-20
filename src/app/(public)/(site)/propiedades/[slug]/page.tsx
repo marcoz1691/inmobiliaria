@@ -10,6 +10,7 @@ import { PropertyFacts } from "@/components/public/PropertyFacts";
 import { PropertyGallery } from "@/components/public/PropertyGallery";
 import { PropertyMap } from "@/components/public/PropertyMap";
 import { ShareButtons } from "@/components/public/ShareButtons";
+import { StickyActionBar } from "@/components/public/StickyActionBar";
 import { WhatsAppButton } from "@/components/public/WhatsAppButton";
 import { formatLocation } from "@/components/public/format";
 import { Badge, statusLabel } from "@/components/ui/Badge";
@@ -161,7 +162,7 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
         </div>
 
         <div className={`${container} mt-10 grid gap-14 lg:mt-16 lg:grid-cols-12 lg:gap-x-16`}>
-          <aside aria-label="Precio y contacto" className="lg:col-span-4 lg:col-start-9 lg:row-start-1">
+          <aside id="precio" aria-label="Precio y contacto" className="lg:col-span-4 lg:col-start-9 lg:row-start-1">
             <div className="flex flex-col gap-4 rounded-lg bg-sand p-6 sm:p-8 lg:sticky lg:top-20">
               <div>
                 <p className="text-[0.9375rem] text-ink-muted">{l.operation === "rent" ? "Alquiler mensual" : "Precio"}</p>
@@ -250,9 +251,8 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
         </div>
       </article>
 
-      {/* Mobile: price and the main action stay within thumb reach. */}
-      <div data-sticky-cta className="glass fixed inset-x-0 bottom-0 z-30 border-t border-ink/10 pb-[env(safe-area-inset-bottom)] lg:hidden">
-        <div className="mx-auto flex h-[var(--sticky-cta-h)] max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
+      <StickyActionBar watchId="precio">
+        <div className="mx-auto flex h-19 max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
           <div className="min-w-0">
             <p className="text-xs text-ink-muted">{l.operation === "rent" ? "Alquiler mensual" : "Precio"}</p>
             <Price amount={l.price} priceKind={l.priceKind} className="block truncate text-[1.0625rem] font-semibold" />
@@ -267,7 +267,7 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
             </Button>
           )}
         </div>
-      </div>
+      </StickyActionBar>
 
       {related.length > 0 ? (
         <section id="similares" aria-labelledby="similares-title" className="bg-sand py-20 lg:py-28">
