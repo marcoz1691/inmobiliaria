@@ -20,7 +20,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
-  reporter: [["list"]],
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
   timeout: 60_000,
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure", locale: "es-EC", timezoneId: "America/Guayaquil" },
   projects: [
