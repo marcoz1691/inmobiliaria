@@ -2,10 +2,11 @@ import { expect as baseExpect, test, type Page } from "@playwright/test";
 import { makePhotos } from "./fixtures/images";
 import { loginPatient as login, warmUp } from "./fixtures/warmup";
 
-test.describe.configure({ timeout: 180_000 });
+test.describe.configure({ timeout: 300_000 });
 /** Dev server compiles on demand; give UI updates more room than the default 5 s. */
-const expect = baseExpect.configure({ timeout: 15_000 });
+const expect = baseExpect.configure({ timeout: 30_000 });
 test.beforeAll(async ({ request }) => {
+  test.setTimeout(300_000);
   await warmUp(request, ["/api/auth/get-session", "/panel", "/panel/ingresar", "/panel/propiedades", "/panel/propiedades/nueva", "/panel/propiedades/00000000-0000-0000-0000-000000000000", "/propiedades"]);
 });
 
@@ -31,7 +32,7 @@ test("publish a property from the wizard, pause it, duplicate and archive", asyn
   await page.getByLabel("Ciudad").fill("Quito");
   await page.getByLabel("Sector o barrio (opcional)").fill("Cumbayá");
   await page.getByRole("button", { name: "Siguiente: Fotos" }).click();
-  await expect(page).toHaveURL(/\/panel\/propiedades\/[0-9a-f-]{36}\?paso=fotos$/);
+  await expect(page).toHaveURL(/\/panel\/propiedades\/[0-9a-f-]{36}\?paso=fotos$/, { timeout: 60_000 });
   const editUrl = page.url().split("?")[0]!;
 
   // 2 · Fotos

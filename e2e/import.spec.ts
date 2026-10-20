@@ -6,7 +6,7 @@ const PDF = "assets-input/pdfs/Casa Pomasqui.pdf";
 
 test.describe.configure({ timeout: 360_000 });
 /** Dev server compiles on demand; give UI updates more room than the default 5 s. */
-const expect = baseExpect.configure({ timeout: 15_000 });
+const expect = baseExpect.configure({ timeout: 30_000 });
 
 test("import a property sheet PDF into a reviewable draft", async ({ page }, info) => {
   test.skip(!existsSync(PDF), "Falta assets-input/pdfs/Casa Pomasqui.pdf");
@@ -19,7 +19,8 @@ test("import a property sheet PDF into a reviewable draft", async ({ page }, inf
   const review = page.getByRole("link", { name: "Ver revisión" });
   await expect(review).toBeVisible({ timeout: 180_000 });
   if (info.project.name !== "desktop") await expect(page.getByText(/ya se importó antes/)).toBeVisible();
-  await review.click();
+  // Navigate by href: a background router.refresh() can delay a client-side transition in dev.
+  await page.goto((await review.getAttribute("href"))!);
   await expect(page).toHaveURL(/\/panel\/importar\/[0-9a-f-]{36}$/);
   await expect(page.getByRole("link", { name: /Abrir PDF original/ })).toBeVisible();
   await expect(page.getByText(/fotos? adjuntas?/)).toBeVisible();

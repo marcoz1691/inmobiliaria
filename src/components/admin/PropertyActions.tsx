@@ -42,21 +42,21 @@ export function PropertyActions({ id, title, status, slug }: Props) {
   const isPublic = ["published", "reserved", "sold", "rented"].includes(status);
 
   return (
-    <div className="flex flex-wrap items-center gap-2">
+    <div className="flex flex-wrap items-start gap-2">
       <Link
         href={`/panel/propiedades/${id}`}
         className="inline-flex min-h-11 items-center rounded-full border border-ink/80 px-4 text-sm font-medium text-ink hover:bg-ink hover:text-paper"
       >
         Editar<span className="sr-only"> {name}</span>
       </Link>
-      <details ref={menu} className="group relative">
+      <details ref={menu} className="group relative max-sm:flex-1">
         <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-full px-4 text-sm font-medium text-ink hover:bg-ink/5 [&::-webkit-details-marker]:hidden">
           Más acciones<span className="sr-only"> para {name}</span>
           <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.6">
             <path d="m5 8 5 5 5-5" />
           </svg>
         </summary>
-        <div className="absolute right-0 z-20 mt-1 w-60 overflow-hidden rounded-sm border border-line bg-white py-1 shadow-sm">
+        <div className="mt-1 w-full overflow-hidden rounded-sm border border-line bg-white py-1 sm:absolute sm:right-0 sm:z-20 sm:w-60 sm:shadow-sm">
           {available.map((q) => (
             <button key={q.to} type="button" className={itemClass} disabled={pending} onClick={() => move(q.to, q.done)}>
               {q.label}
