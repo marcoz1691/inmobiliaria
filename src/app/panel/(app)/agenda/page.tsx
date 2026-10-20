@@ -16,6 +16,7 @@ const KIND: Record<string, string> = { video: "Videollamada", phone: "Llamada", 
 
 /** Request time; past bookings of the last two weeks still need an outcome. */
 function timeWindow() {
+  const now = Date.now();
   return { now, since: new Date(now - 14 * 24 * 3600 * 1000) };
 }
 

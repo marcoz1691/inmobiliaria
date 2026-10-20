@@ -51,7 +51,7 @@ test("publish a property from the wizard, pause it, duplicate and archive", asyn
   await page.getByLabel("Dormitorios").fill("3");
   await page.getByLabel("Baños").fill("2,5");
   await page.getByLabel("Área de construcción (m²)").fill("180");
-  await page.getByRole("button", { name: "Jardín: agregar" }).click();
+  await page.getByRole("button", { name: "Agregar Jardín" }).click();
   await expect(page.getByRole("status").filter({ hasText: "Guardado" })).toBeVisible();
   await page.getByRole("button", { name: "Siguiente: Revisar y publicar" }).click();
 

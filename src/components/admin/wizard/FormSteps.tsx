@@ -233,10 +233,10 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
               <button
                 type="button"
                 onClick={() => onChange(values.filter((x) => x !== v))}
+                aria-label={`Quitar ${v}`}
                 className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-4 text-sm text-paper hover:bg-ink/85"
               >
                 {v}
-                <span className="sr-only">: quitar</span>
                 <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8">
                   <path d="m6 6 8 8M14 6l-8 8" />
                 </svg>
@@ -254,10 +254,10 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
                 <button
                   type="button"
                   onClick={() => add(s)}
+                  aria-label={`Agregar ${s}`}
                   className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line-strong bg-white px-4 text-sm text-ink hover:border-ink"
                 >
                   <span aria-hidden="true">+</span> {s}
-                  <span className="sr-only">: agregar</span>
                 </button>
               </li>
             ))}
