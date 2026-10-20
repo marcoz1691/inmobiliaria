@@ -251,5 +251,15 @@ describe("panel route handlers", () => {
         expect(await res.text()).not.toContain('"name"');
       }
     });
+
+    it("never serves an imported source PDF, which holds boundaries, cadastral codes and contacts", async () => {
+      const r = await importPdf(mA, "privado.pdf", makePdf(["CASA PRIVADA - QUITO", "LINDEROS\nAl norte: Lote 4"]));
+      const [row] = await db.select().from(imports).where(eq(imports.id, r.importId));
+      const key = row!.storageKey!;
+      expect((await readLocal(key)).subarray(0, 5).toString()).toBe("%PDF-");
+      expect((await get(key.split("/"))).status).toBe(404);
+      // Same object under another spelling of the path.
+      expect((await get(["tenants", mA.tenantId, "properties", "..", "imports", key.split("/").pop()!]))).toMatchObject({ status: 404 });
+    });
   });
 });
