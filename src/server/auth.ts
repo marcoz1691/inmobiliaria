@@ -22,7 +22,8 @@ async function build() {
     },
     session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },
     rateLimit: {
-      enabled: true,
+      // Production only: e2e suites log in repeatedly from one IP against `next dev`.
+      enabled: env.NODE_ENV === "production",
       window: 60,
       max: 60,
       customRules: { "/sign-in/email": { window: 60, max: 5 } },
