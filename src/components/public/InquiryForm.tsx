@@ -55,7 +55,7 @@ export function InquiryForm({
       {propertyId ? <input type="hidden" name="propertyId" value={propertyId} /> : null}
 
       {state.status === "error" ? (
-        <p ref={alertRef} tabIndex={-1} role="alert" className="border-t-2 border-sold pt-3 text-sm font-medium text-sold">
+        <p ref={alertRef} tabIndex={-1} role="alert" className="rounded-sm bg-sold-bg px-4 py-3 text-sm font-medium text-sold">
           {state.message}
         </p>
       ) : null}
