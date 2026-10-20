@@ -7,7 +7,7 @@ const noopSubscribe = () => () => {};
 type ShareButtonsProps = { url: string; title: string };
 
 const linkClass =
-  "inline-flex min-h-11 items-center rounded-full border border-line-strong px-4 text-sm font-medium text-ink transition-colors hover:bg-ink hover:text-paper";
+  "inline-flex min-h-11 items-center rounded-full bg-sand px-5 text-[0.9375rem] font-medium text-ink transition-colors duration-300 ease-apple hover:bg-ink hover:text-white";
 
 /** Native share sheet when available, copy-link fallback, plus plain share links (no SDKs). */
 export function ShareButtons({ url, title }: ShareButtonsProps) {
@@ -45,7 +45,7 @@ export function ShareButtons({ url, title }: ShareButtonsProps) {
 
   return (
     <div>
-      <h2 className="text-eyebrow font-medium text-clay uppercase">Compartir</h2>
+      <h2 className="text-eyebrow text-ink">Compartir</h2>
       <ul className="mt-3 flex flex-wrap gap-2">
         <li>
           {canShare ? (

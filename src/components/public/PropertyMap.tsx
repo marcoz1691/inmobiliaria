@@ -36,7 +36,7 @@ export function PropertyMap({ point, label }: { point: MapPoint; label: string }
   }, []);
 
   return (
-    <div ref={ref} role="region" aria-label={label} className="relative isolate aspect-[4/3] overflow-hidden rounded-sm bg-sand sm:aspect-[16/9]">
+    <div ref={ref} role="region" aria-label={label} className="relative isolate aspect-[4/3] overflow-hidden rounded-md bg-sand sm:aspect-[16/9]">
       {visible ? <LeafletMap point={point} /> : null}
     </div>
   );

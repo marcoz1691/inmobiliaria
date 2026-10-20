@@ -14,7 +14,9 @@ import { WhatsAppButton } from "@/components/public/WhatsAppButton";
 import { formatLocation } from "@/components/public/format";
 import { Badge, statusLabel } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { MoreLink } from "@/components/ui/MoreLink";
 import { Price } from "@/components/ui/Price";
+import { Reveal } from "@/components/ui/Reveal";
 import { CONSENT_TEXT } from "@/modules/crm/service";
 import { OPERATION_LABEL, TYPE_LABEL } from "@/modules/properties/domain";
 import { getPublicProperty, listRelated, type PublicListing } from "@/modules/properties/service";
@@ -123,49 +125,53 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
   const url = `${origin}/propiedades/${l.slug}`;
   const where = formatLocation(l);
 
+  const bookingLabel = "Agenda una visita";
+
   return (
     <>
       <JsonLd data={listingJsonLd(l, url, origin)} />
-      <article className={`${container} pt-6 pb-16 lg:pt-10 lg:pb-24`}>
-        <nav aria-label="Ruta de navegación" className="text-sm text-ink-muted">
-          <ol className="flex flex-wrap items-center gap-2">
-            <li>
-              <Link href="/propiedades" className="inline-flex min-h-11 items-center underline-offset-4 hover:text-ink hover:underline">
-                Propiedades
-              </Link>
-            </li>
-            <li aria-hidden="true">/</li>
-            <li aria-current="page" className="line-clamp-1">
-              {l.title}
-            </li>
-          </ol>
-        </nav>
+      <article className="pb-20 lg:pb-28">
+        <div className={`${container} pt-4 lg:pt-8`}>
+          <nav aria-label="Ruta de navegación" className="text-sm text-ink-muted">
+            <ol className="flex flex-wrap items-center gap-x-2">
+              <li>
+                <Link href="/propiedades" className="inline-flex min-h-11 items-center text-link underline-offset-4 hover:underline">
+                  Propiedades
+                </Link>
+              </li>
+              <li aria-hidden="true">›</li>
+              <li aria-current="page" className="line-clamp-1">
+                {l.title}
+              </li>
+            </ol>
+          </nav>
 
-        <header className="mt-2 mb-8 flex flex-col gap-3 lg:mb-10">
-          <p className="text-eyebrow font-medium text-clay uppercase">
-            {card.propertyType} · {OPERATION_LABEL[card.operation]}
-          </p>
-          <h1 className="max-w-4xl font-display text-display-lg text-balance text-ink">{l.title}</h1>
-          <div className="flex flex-wrap items-center gap-3">
-            {where ? <p className="text-lg text-ink-muted">{where}</p> : null}
-            {closed ? <Badge status={status} /> : null}
-          </div>
-        </header>
+          <header className="mt-2 mb-8 flex flex-col gap-3 lg:mb-10">
+            <p className="text-eyebrow text-clay">
+              {card.propertyType} · {OPERATION_LABEL[card.operation]}
+            </p>
+            <h1 className="max-w-5xl font-display text-display-lg text-balance text-ink">{l.title}</h1>
+            <div className="flex flex-wrap items-center gap-3">
+              {where ? <p className="text-lead text-ink-muted">{where}</p> : null}
+              {closed ? <Badge status={status} /> : null}
+            </div>
+          </header>
 
-        <PropertyGallery images={card.images} title={l.title} />
+          <PropertyGallery images={card.images} title={l.title} />
+        </div>
 
-        <div className="mt-10 grid gap-12 lg:mt-14 lg:grid-cols-12 lg:gap-x-12">
+        <div className={`${container} mt-10 grid gap-14 lg:mt-16 lg:grid-cols-12 lg:gap-x-16`}>
           <aside aria-label="Precio y contacto" className="lg:col-span-4 lg:col-start-9 lg:row-start-1">
-            <div className="flex flex-col gap-5 border-t-2 border-ink pt-5 lg:sticky lg:top-28">
+            <div className="flex flex-col gap-4 rounded-lg bg-sand p-6 sm:p-8 lg:sticky lg:top-20">
               <div>
-                <p className="text-sm text-ink-muted">{l.operation === "rent" ? "Alquiler mensual" : "Precio"}</p>
-                <Price amount={l.price} priceKind={l.priceKind} className="mt-1 block font-display text-display-md text-ink" />
-                {l.priceNote ? <p className="mt-1 text-sm text-ink-muted">{l.priceNote}</p> : null}
+                <p className="text-[0.9375rem] text-ink-muted">{l.operation === "rent" ? "Alquiler mensual" : "Precio"}</p>
+                <Price amount={l.price} priceKind={l.priceKind} className="mt-1 block font-display text-display-md" />
+                {l.priceNote ? <p className="mt-2 text-sm text-ink-muted">{l.priceNote}</p> : null}
               </div>
               {closed ? (
                 <div className="flex flex-col gap-3 border-t border-line pt-4">
                   <p className="text-base text-ink">
-                    Esta propiedad está <strong className="font-medium">{statusLabel(status).toLowerCase()}</strong>.
+                    Esta propiedad está <strong className="font-semibold">{statusLabel(status).toLowerCase()}</strong>.
                     {status === "reserved" ? " Aún puedes consultar por ella o ver opciones parecidas." : " Mira opciones parecidas."}
                   </p>
                   <Button href="#similares" size="lg" className="w-full">
@@ -173,8 +179,8 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
                   </Button>
                 </div>
               ) : (
-                <Button href={site.bookingHref} size="lg" className="w-full">
-                  Agenda una visita
+                <Button href={site.bookingHref} size="lg" className="mt-2 w-full">
+                  {bookingLabel}
                 </Button>
               )}
               <WhatsAppButton
@@ -183,43 +189,49 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
                 className="w-full"
                 message={`Hola, me interesa ${l.title} (${url})`}
               />
-              <Link href="#consulta" className="inline-flex min-h-11 items-center justify-center text-sm font-medium text-ink underline underline-offset-4">
+              <MoreLink href="#consulta" className="self-center">
                 Hacer una consulta por escrito
-              </Link>
+              </MoreLink>
             </div>
           </aside>
 
-          <div className="flex flex-col gap-14 lg:col-span-8 lg:row-start-1">
-            <PropertyFacts property={card} />
+          <div className="flex flex-col gap-16 lg:col-span-7 lg:row-start-1">
+            <Reveal>
+              <PropertyFacts property={card} />
+            </Reveal>
 
             {l.description ? (
-              <section aria-labelledby="descripcion">
-                <h2 id="descripcion" className="text-eyebrow font-medium text-clay uppercase">
-                  Descripción
-                </h2>
-                <div className="mt-4 max-w-prose text-lg leading-relaxed whitespace-pre-line text-pretty text-ink">{l.description}</div>
-              </section>
+              <Reveal>
+                <section aria-labelledby="descripcion">
+                  <h2 id="descripcion" className="font-display text-display-md text-ink">
+                    Descripción
+                  </h2>
+                  <div className="mt-5 max-w-prose text-lead whitespace-pre-line text-pretty text-ink">{l.description}</div>
+                </section>
+              </Reveal>
             ) : null}
 
             {l.map ? (
-              <section aria-labelledby="ubicacion">
-                <h2 id="ubicacion" className="text-eyebrow font-medium text-clay uppercase">
-                  Ubicación
-                </h2>
-                <p className="mt-2 mb-4 text-base text-ink-muted">
-                  {l.map.radiusMeters !== null
-                    ? `Zona aproximada${where ? ` en ${where}` : ""}. La dirección exacta se comparte al agendar la visita.`
-                    : (l.address ?? where)}
-                </p>
-                <PropertyMap point={l.map} label={`Mapa de la ubicación de ${l.title}`} />
-              </section>
+              <Reveal>
+                <section aria-labelledby="ubicacion">
+                  <h2 id="ubicacion" className="font-display text-display-md text-ink">
+                    Ubicación
+                  </h2>
+                  <p className="mt-3 mb-6 max-w-prose text-[1.0625rem] text-ink-muted">
+                    {l.map.radiusMeters !== null
+                      ? `Zona aproximada${where ? ` en ${where}` : ""}. La dirección exacta se comparte al agendar la visita.`
+                      : (l.address ?? where)}
+                  </p>
+                  <PropertyMap point={l.map} label={`Mapa de la ubicación de ${l.title}`} />
+                </section>
+              </Reveal>
             ) : null}
 
-            <section id="consulta" aria-labelledby="consulta-title" className="border-t border-line pt-10">
+            <section id="consulta" aria-labelledby="consulta-title" className="rounded-lg bg-sand p-6 sm:p-10">
               <h2 id="consulta-title" className="font-display text-display-md text-ink">
                 Pregunta por esta propiedad
               </h2>
-              <p className="mt-2 mb-6 max-w-prose text-base text-ink-muted">Te respondo por el medio que prefieras.</p>
+              <p className="mt-2 mb-8 max-w-prose text-[1.0625rem] text-ink-muted">Te respondo por el medio que prefieras.</p>
               <div className="max-w-xl">
                 <InquiryForm
                   action={submitInquiry}
@@ -238,38 +250,55 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
         </div>
       </article>
 
+      {/* Mobile: price and the main action stay within thumb reach. */}
+      <div data-sticky-cta className="glass fixed inset-x-0 bottom-0 z-30 border-t border-ink/10 pb-[env(safe-area-inset-bottom)] lg:hidden">
+        <div className="mx-auto flex h-[var(--sticky-cta-h)] max-w-7xl items-center justify-between gap-4 px-5 sm:px-8">
+          <div className="min-w-0">
+            <p className="text-xs text-ink-muted">{l.operation === "rent" ? "Alquiler mensual" : "Precio"}</p>
+            <Price amount={l.price} priceKind={l.priceKind} className="block truncate text-[1.0625rem] font-semibold" />
+          </div>
+          {closed ? (
+            <Button href="#similares" className="shrink-0">
+              Ver similares
+            </Button>
+          ) : (
+            <Button href={site.bookingHref} className="shrink-0">
+              {bookingLabel}
+            </Button>
+          )}
+        </div>
+      </div>
+
       {related.length > 0 ? (
-        <section id="similares" aria-labelledby="similares-title" className="border-t border-line py-16 lg:py-24">
+        <section id="similares" aria-labelledby="similares-title" className="bg-sand py-20 lg:py-28">
           <div className={container}>
-            <h2 id="similares-title" className="font-display text-display-lg text-ink">
-              Propiedades similares
-            </h2>
-            <ul className="mt-10 grid gap-x-6 gap-y-12 sm:grid-cols-2 lg:grid-cols-3 lg:gap-x-8">
-              {related.map((p) => (
+            <Reveal className="flex flex-wrap items-end justify-between gap-x-8 gap-y-2">
+              <h2 id="similares-title" className="font-display text-display-lg text-ink">
+                Propiedades similares.
+              </h2>
+              <MoreLink href="/propiedades">Ver todas las propiedades</MoreLink>
+            </Reveal>
+            <ul className="mt-10 grid gap-5 sm:grid-cols-2 lg:mt-14 lg:grid-cols-3 lg:gap-6">
+              {related.map((p, i) => (
                 <li key={p.slug}>
-                  <PropertyCard property={p} href={`/propiedades/${p.slug}`} />
+                  <Reveal delay={i * 90} className="h-full">
+                    <PropertyCard property={p} href={`/propiedades/${p.slug}`} />
+                  </Reveal>
                 </li>
               ))}
             </ul>
-            <p className="mt-10">
-              <Link href="/propiedades" className="inline-flex min-h-11 items-center font-medium text-ink underline underline-offset-4">
-                Ver todas las propiedades
-              </Link>
-            </p>
           </div>
         </section>
       ) : closed ? (
-        <section id="similares" aria-labelledby="similares-title" className="border-t border-line py-16">
+        <section id="similares" aria-labelledby="similares-title" className="bg-sand py-16 lg:py-20">
           <div className={container}>
             <h2 id="similares-title" className="font-display text-display-md text-ink">
               Propiedades similares
             </h2>
-            <p className="mt-3 text-base text-ink-muted">
-              Por ahora no hay otras parecidas publicadas.{" "}
-              <Link href="/propiedades" className="font-medium text-ink underline underline-offset-4">
-                Ver el catálogo
-              </Link>
-            </p>
+            <p className="mt-3 text-[1.0625rem] text-ink-muted">Por ahora no hay otras parecidas publicadas.</p>
+            <MoreLink href="/propiedades" className="mt-2">
+              Ver el catálogo
+            </MoreLink>
           </div>
         </section>
       ) : null}
