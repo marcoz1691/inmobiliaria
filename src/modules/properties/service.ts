@@ -131,8 +131,10 @@ export async function listForPanel(m: MemberContext, opts: { status?: PropertySt
     const rows = await tx
       .select({
         property: properties,
-        cover: sql<string | null>`(select storage_key from property_media pm where pm.property_id = ${properties.id} order by pm.is_cover desc, pm.position asc limit 1)`,
-        photoCount: sql<number>`(select count(*)::int from property_media pm where pm.property_id = ${properties.id})`,
+        // Qualified on purpose: drizzle renders ${properties.id} as a bare "id", which inside the
+        // subquery would resolve to property_media.id.
+        cover: sql<string | null>`(select storage_key from property_media pm where pm.property_id = "properties"."id" order by pm.is_cover desc, pm.position asc limit 1)`,
+        photoCount: sql<number>`(select count(*)::int from property_media pm where pm.property_id = "properties"."id")`,
       })
       .from(properties)
       .where(and(...where))

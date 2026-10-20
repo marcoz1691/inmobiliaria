@@ -154,8 +154,10 @@ export async function importPdf(m: MemberContext, fileName: string, data: Buffer
         sourceImportId: importId,
       });
       created++;
+      // A single-property sheet owns every photo in the file; catalog listings only those on their pages.
       const pages = new Set(listing.sourcePages);
-      const own = images.filter((img) => pages.size === 0 || pages.has(img.page)).slice(0, MAX_PHOTOS_PER_LISTING);
+      const single = result.listings.length === 1;
+      const own = images.filter((img) => single || pages.size === 0 || pages.has(img.page)).slice(0, MAX_PHOTOS_PER_LISTING);
       let photos = 0;
       for (const img of own) {
         try {
