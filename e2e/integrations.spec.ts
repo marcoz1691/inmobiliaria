@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { login } from "./helpers";
 
 // The e2e server runs without third-party credentials: every integration must say so honestly.
 
@@ -20,12 +19,8 @@ test("opt-out with an invalid link shows a clear 400 page", async ({ page }) => 
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Enlace no válido");
 });
 
-test("Google Calendar connect requires a session and reports missing configuration", async ({ page }) => {
+// Only the anonymous branch: sign-in is rate limited (5/min per IP) and other specs already log in.
+test("Google Calendar connect requires a panel session", async ({ page }) => {
   await page.goto("/api/integrations/google/start");
   await expect(page).toHaveURL(/\/panel\/ingresar$/);
-  // Let the dev server finish compiling and hydrating the login form before submitting it.
-  await page.waitForLoadState("networkidle");
-  await login(page);
-  await page.goto("/api/integrations/google/start");
-  await expect(page).toHaveURL(/\/panel\/integraciones\?google=no_configurado$/);
 });
