@@ -1,11 +1,21 @@
 import type { ReactNode } from "react";
 import { cn } from "@/components/ui/cn";
+import { Icon } from "./ui/Icon";
 
+/** Text control: 44 px tall, 3:1 boundary, soft focus halo plus a solid accent border. */
 export const inputClass =
-  "mt-1.5 block min-h-11 w-full rounded-sm border border-line-strong bg-white px-3 text-base text-ink placeholder:text-ink-muted/70 " +
-  "aria-[invalid=true]:border-sold disabled:bg-sand";
+  "mt-1.5 block min-h-11 w-full rounded-[10px] border border-line-strong bg-white px-3.5 text-base text-ink placeholder:text-ink-muted/70 " +
+  "transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.28,0.11,0.32,1)] " +
+  "hover:border-ink-muted focus:border-navy focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-navy)_18%,transparent)] focus-visible:outline-none " +
+  "aria-[invalid=true]:border-sold aria-[invalid=true]:focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-sold)_15%,transparent)] disabled:bg-sand disabled:text-ink-muted read-only:bg-sand/60";
 
-export const selectClass = cn(inputClass, "pr-8");
+export const selectClass = cn(
+  inputClass,
+  "appearance-none bg-[length:1.125rem] bg-[right_0.75rem_center] bg-no-repeat pr-10",
+  "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 9.5 5 5 5-5'/%3E%3C/svg%3E\")]",
+);
+
+export const labelClass = "block text-sm font-medium text-ink";
 
 export type FieldMessages = { error?: string | null; hint?: ReactNode; verify?: boolean };
 
@@ -13,6 +23,17 @@ export type FieldMessages = { error?: string | null; hint?: ReactNode; verify?: 
 export function describedBy(id: string, msg: FieldMessages): string | undefined {
   const ids = [msg.verify ? `${id}-verify` : null, msg.hint ? `${id}-hint` : null, msg.error ? `${id}-error` : null].filter(Boolean);
   return ids.length ? ids.join(" ") : undefined;
+}
+
+export const verifyBox = "rounded-[12px] bg-reserved-bg/70 p-3 ring-1 ring-reserved/25";
+
+export function VerifyNote({ id }: { id?: string }) {
+  return (
+    <p id={id} className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-reserved">
+      <Icon name="alert" className="size-4 shrink-0" strokeWidth={2} />
+      Verifica este dato: se importó del PDF con dudas.
+    </p>
+  );
 }
 
 /** Label + control + hint/verify/error, with the helper texts linked through `aria-describedby`. */
@@ -25,27 +46,21 @@ export function Field({
   ...msg
 }: FieldMessages & { id: string; label: ReactNode; optional?: boolean; children: ReactNode; className?: string }) {
   return (
-    <div className={cn("min-w-0", msg.verify && "rounded-sm bg-reserved-bg/60 p-3 ring-1 ring-reserved/30", className)}>
-      <label htmlFor={id} className="block text-sm font-medium text-ink">
+    <div className={cn("min-w-0", msg.verify && verifyBox, className)}>
+      <label htmlFor={id} className={labelClass}>
         {label}
         {optional ? <span className="font-normal text-ink-muted"> (opcional)</span> : null}
       </label>
       {children}
-      {msg.verify ? (
-        <p id={`${id}-verify`} className="mt-1.5 flex items-center gap-1.5 text-sm font-medium text-reserved">
-          <svg aria-hidden="true" viewBox="0 0 24 24" className="size-4 shrink-0" fill="none" stroke="currentColor" strokeWidth="1.8">
-            <path d="M12 8v5m0 3.5v.01M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" />
-          </svg>
-          Verifica este dato: se importó del PDF con dudas.
-        </p>
-      ) : null}
+      {msg.verify ? <VerifyNote id={`${id}-verify`} /> : null}
       {msg.hint ? (
-        <p id={`${id}-hint`} className="mt-1.5 text-sm text-ink-muted">
+        <p id={`${id}-hint`} className="mt-1.5 text-[0.8125rem] leading-snug text-ink-muted">
           {msg.hint}
         </p>
       ) : null}
       {msg.error ? (
-        <p id={`${id}-error`} className="mt-1.5 text-sm font-medium text-sold">
+        <p id={`${id}-error`} className="mt-1.5 flex items-start gap-1.5 text-sm font-medium text-sold">
+          <Icon name="alert" className="mt-0.5 size-4 shrink-0" strokeWidth={2} />
           {msg.error}
         </p>
       ) : null}

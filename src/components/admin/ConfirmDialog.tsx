@@ -1,7 +1,7 @@
 "use client";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
-import { Button } from "@/components/ui/Button";
-import { cn } from "@/components/ui/cn";
+import { useState, type ReactNode } from "react";
+import { Button } from "./ui/Button";
+import { Sheet } from "./ui/Sheet";
 
 type Props = {
   title: string;
@@ -14,23 +14,11 @@ type Props = {
   children?: ReactNode;
 };
 
-/**
- * Confirmation with the native `<dialog>`: modal, focus moved inside and trapped, Escape closes
- * and focus returns to the trigger.
- */
+/** Confirmation in a modal sheet (bottom sheet on phones). "Cancelar" gets the initial focus. */
 export function ConfirmDialog({ title, description, confirmLabel, onConfirm, trigger, destructive, children }: Props) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const id = useId();
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isOpen, setOpen] = useState(false);
-
-  useEffect(() => {
-    const d = ref.current;
-    if (!d) return;
-    if (isOpen && !d.open) d.showModal();
-    if (!isOpen && d.open) d.close();
-  }, [isOpen]);
 
   function open() {
     setError(null);
@@ -48,22 +36,8 @@ export function ConfirmDialog({ title, description, confirmLabel, onConfirm, tri
   return (
     <>
       {trigger(open)}
-      <dialog
-        ref={ref}
-        onClose={() => setOpen(false)}
-        aria-labelledby={`${id}-t`}
-        aria-describedby={description ? `${id}-d` : undefined}
-        className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-md border border-line bg-paper p-0 text-ink backdrop:bg-ink/50"
-      >
-        <form onSubmit={confirm} className="p-6">
-          <h2 id={`${id}-t`} className="font-display text-2xl leading-tight">
-            {title}
-          </h2>
-          {description ? (
-            <div id={`${id}-d`} className="mt-2 text-base text-ink-muted">
-              {description}
-            </div>
-          ) : null}
+      <Sheet open={isOpen} onClose={() => setOpen(false)} title={title} description={description}>
+        <form onSubmit={confirm}>
           {children}
           {error ? (
             <p role="alert" className="mt-4 text-sm font-medium text-sold">
@@ -71,15 +45,15 @@ export function ConfirmDialog({ title, description, confirmLabel, onConfirm, tri
             </p>
           ) : null}
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={() => setOpen(false)} autoFocus>
+            <Button variant="gray" size="lg" className="sm:min-h-11 sm:px-5 sm:text-[0.9375rem]" onClick={() => setOpen(false)} autoFocus>
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending} className={cn(destructive && "bg-sold hover:bg-sold/90 active:bg-sold")}>
+            <Button type="submit" variant={destructive ? "destructive" : "filled"} size="lg" className="sm:min-h-11 sm:px-5 sm:text-[0.9375rem]" pending={pending}>
               {pending ? "Un momento…" : confirmLabel}
             </Button>
           </div>
         </form>
-      </dialog>
+      </Sheet>
     </>
   );
 }
