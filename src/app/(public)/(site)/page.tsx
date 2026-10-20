@@ -25,7 +25,7 @@ export default async function HomePage() {
         name={site.name}
         role={agent?.headline ?? undefined}
         eyebrow={agentTagline(agent)}
-        headline="Tu próxima propiedad, con acompañamiento de principio a fin."
+        headline="Encuentra tu próxima propiedad. Sin rodeos."
         intro={
           <p>
             {agent?.bio ??
@@ -36,6 +36,7 @@ export default async function HomePage() {
         whatsapp={agent?.whatsapp}
         ctaHref={site.bookingHref}
         ctaLabel={site.funnelHref ? "Agenda una cita" : "Escríbeme"}
+        secondaryHref="/propiedades"
       />
 
       <section aria-labelledby="destacadas-title" className="border-t border-line py-16 lg:py-24">

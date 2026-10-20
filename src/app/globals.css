@@ -6,19 +6,19 @@
  */
 @theme {
   /* Neutrals */
-  --color-paper: #f7f5f0; /* page background, warm off-white */
-  --color-sand: #ede8df; /* sunken sections, image placeholders */
+  --color-paper: #ffffff; /* page background */
+  --color-sand: #f5f5f7; /* alternate sections, image placeholders */
   --color-white: #ffffff;
-  --color-line: #ddd7cc; /* decorative hairlines only */
-  --color-line-strong: #8a8478; /* UI boundaries (3.41:1 on paper) */
-  --color-ink: #15171a; /* body text (16.48:1 on paper) */
-  --color-ink-muted: #585c63; /* secondary text (6.17:1 paper, 5.51:1 sand) */
-  --color-paper-muted: #b9b4aa; /* secondary text on ink (8.70:1) */
+  --color-line: #d2d2d7; /* hairlines */
+  --color-line-strong: #86868b; /* UI boundaries (3.6:1 on white) */
+  --color-ink: #1d1d1f; /* text (16.8:1 on white) */
+  --color-ink-muted: #6e6e73; /* secondary text (5.07:1 white, 4.64:1 sand) */
+  --color-paper-muted: #a1a1a6; /* secondary text on ink (7.3:1) */
 
   /* Brand */
-  --color-navy: #1b2a41; /* primary actions (white on navy 14.44:1) */
-  --color-navy-hover: #2a3d5c; /* white on it 10.93:1 */
-  --color-clay: #9a4527; /* accent text, eyebrows (5.92:1 paper, 5.29:1 sand) */
+  --color-navy: #0068d6; /* primary actions: blue pill (white on it 5.1:1) */
+  --color-navy-hover: #0058b8; /* white on it 6.6:1 */
+  --color-clay: #b64400; /* eyebrow accent (5.3:1 white, 4.8:1 sand) */
 
   /* Property status (fg on bg) */
   --color-available: #1e5236;
@@ -33,21 +33,25 @@
   /* Type scale (fluid). Body uses Tailwind's default text-sm/base/lg. */
   --text-eyebrow: 0.8125rem;
   --text-eyebrow--line-height: 1.25rem;
-  --text-eyebrow--letter-spacing: 0.08em;
-  --text-display-xl: clamp(2.5rem, 1.5rem + 4vw, 4.75rem);
-  --text-display-xl--line-height: 1.02;
-  --text-display-xl--letter-spacing: -0.02em;
-  --text-display-lg: clamp(2rem, 1.4rem + 2.4vw, 3.25rem);
-  --text-display-lg--line-height: 1.08;
-  --text-display-lg--letter-spacing: -0.015em;
+  --text-eyebrow--letter-spacing: 0.01em;
+  --text-eyebrow--font-weight: 600;
+  --text-display-xl: clamp(2.75rem, 1.4rem + 5vw, 5.25rem);
+  --text-display-xl--line-height: 1.04;
+  --text-display-xl--letter-spacing: -0.03em;
+  --text-display-xl--font-weight: 700;
+  --text-display-lg: clamp(2.125rem, 1.4rem + 2.8vw, 3.5rem);
+  --text-display-lg--line-height: 1.07;
+  --text-display-lg--letter-spacing: -0.025em;
+  --text-display-lg--font-weight: 700;
   --text-display-md: clamp(1.5rem, 1.25rem + 1vw, 2rem);
   --text-display-md--line-height: 1.15;
-  --text-display-md--letter-spacing: -0.01em;
+  --text-display-md--letter-spacing: -0.018em;
+  --text-display-md--font-weight: 600;
 
-  /* Radii: crisp, editorial. Full pills are reserved for actions. */
-  --radius-xs: 2px;
-  --radius-sm: 4px;
-  --radius-md: 8px;
+  /* Radii: soft, generous. Full pills are reserved for actions. */
+  --radius-xs: 6px;
+  --radius-sm: 14px;
+  --radius-md: 22px;
 
   /* Motion */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
@@ -66,8 +70,9 @@
 
 /* Font families come from next/font CSS variables set on <html> (src/app/layout.tsx). */
 @theme inline {
-  --font-sans: var(--font-schibsted), ui-sans-serif, system-ui, sans-serif;
-  --font-display: var(--font-newsreader), ui-serif, Georgia, serif;
+  /* San Francisco on Apple devices (system font); Inter everywhere else. */
+  --font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", var(--font-inter), "Helvetica Neue", Arial, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", var(--font-inter), "Helvetica Neue", Arial, sans-serif;
 }
 
 @layer base {
@@ -83,6 +88,9 @@
     background: var(--color-paper);
     color: var(--color-ink);
     font-family: var(--font-sans);
+    font-size: 1.0625rem;
+    letter-spacing: -0.01em;
+    -webkit-font-smoothing: antialiased;
   }
 
   ::selection {

@@ -30,13 +30,13 @@ const base =
 
 const variants: Record<ButtonVariant, string> = {
   primary: "bg-navy text-white hover:bg-navy-hover active:bg-ink",
-  secondary: "border border-ink/80 text-ink hover:bg-ink hover:text-paper",
+  secondary: "border border-navy text-navy hover:bg-navy hover:text-white",
   ghost: "text-ink underline-offset-4 hover:bg-ink/5 hover:underline",
 };
 
 const sizes: Record<ButtonSize, string> = {
-  md: "px-5 text-sm",
-  lg: "min-h-12 px-6 text-base",
+  md: "px-5 text-[0.9375rem]",
+  lg: "min-h-12 px-7 text-[1.0625rem]",
 };
 
 const EXTERNAL = /^(https?:|mailto:|tel:)/;
