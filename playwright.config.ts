@@ -12,6 +12,7 @@ const serverEnv = {
   SEED_OWNER_EMAIL: process.env.E2E_EMAIL,
   SEED_OWNER_PASSWORD: process.env.E2E_PASSWORD,
   APP_URL: `http://localhost:${PORT}`,
+  SEED_E2E_FIXTURES: "1",
 };
 
 export default defineConfig({

@@ -1,6 +1,6 @@
 /**
  * Minimal public shape of a property, as rendered on the agent's site.
- * It will be mapped from the database later; keep it free of private fields
+ * Mapped from the database by `toCardProperty` (./listing.ts); keep it free of private fields
  * (owner contacts, cadastral codes, exact boundaries).
  */
 export type PropertyStatus = "available" | "reserved" | "sold" | "rented";
@@ -27,7 +27,7 @@ export type PublicProperty = {
   price: number | null;
   priceKind: PriceKind;
   currency: "USD";
-  city: string;
+  city: string | null;
   sector: string | null;
   /** m² */
   landArea: number | null;
@@ -38,6 +38,7 @@ export type PublicProperty = {
   parking: number | null;
   amenities: string[];
   highlights: string[];
-  cover: PublicImage;
+  /** Null until the agent uploads a photo. */
+  cover: PublicImage | null;
   images: PublicImage[];
 };

@@ -17,7 +17,7 @@ export const OPERATION_LABEL: Record<PropertyOperation, string> = {
 
 /** "Cumbayá, Quito" or just the city. Public location is approximate by design. */
 export function formatLocation(p: Pick<PublicProperty, "city" | "sector">): string {
-  return p.sector ? `${p.sector}, ${p.city}` : p.city;
+  return [p.sector, p.city].filter(Boolean).join(", ");
 }
 
 export type Fact = { label: string; value: string; unit?: string };

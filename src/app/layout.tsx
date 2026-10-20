@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Newsreader, Schibsted_Grotesk } from "next/font/google";
+import { env } from "@/env";
 import "./globals.css";
 
 // Display serif: editorial, optical sizes, full Spanish diacritics.
@@ -18,6 +19,8 @@ const schibsted = Schibsted_Grotesk({
 });
 
 export const metadata: Metadata = {
+  // Fallback for absolute URLs; public pages override it with the request's own host.
+  metadataBase: new URL(env.APP_URL),
   title: "Asesoría inmobiliaria",
   description: "Propiedades seleccionadas y acompañamiento personal en Ecuador.",
 };

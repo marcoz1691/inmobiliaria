@@ -70,6 +70,12 @@ export async function seed() {
     await db.update(agentProfiles).set({ photoUrl: `media:${storage.url(baseKey)}` }).where(eq(agentProfiles.id, agent!.id));
   }
 
+  // Test-only fixtures (funnel "comprador", availability, sample listings). Never on by default.
+  if (process.env.SEED_E2E_FIXTURES === "1") {
+    const { seedE2EFixtures } = await import("./e2e-fixtures");
+    await seedE2EFixtures(db, { tenantId, ownerId: owner!.id, agentId: agent!.id });
+  }
+
   console.log(JSON.stringify({ level: "info", msg: "seed complete", tenant: TENANT_SLUG, owner: OWNER_EMAIL }));
   return { tenantId, ownerId: owner!.id, agentId: agent!.id };
 }

@@ -52,17 +52,21 @@ export function PropertyCard({
           feature ? "aspect-[4/3] lg:aspect-[5/4]" : "aspect-[4/3]",
         )}
       >
-        <Image
-          src={p.cover.src}
-          unoptimized={isUnsizedSource(p.cover.src)}
-          alt={p.cover.alt}
-          fill
-          sizes={sizes}
-          preload={preload}
-          placeholder={p.cover.blurDataUrl ? "blur" : "empty"}
-          blurDataURL={p.cover.blurDataUrl}
-          className="object-cover transition-transform duration-500 ease-out-quart group-hover:scale-[1.03]"
-        />
+        {p.cover ? (
+          <Image
+            src={p.cover.src}
+            unoptimized={isUnsizedSource(p.cover.src)}
+            alt={p.cover.alt}
+            fill
+            sizes={sizes}
+            preload={preload}
+            placeholder={p.cover.blurDataUrl ? "blur" : "empty"}
+            blurDataURL={p.cover.blurDataUrl}
+            className="object-cover transition-transform duration-500 ease-out-quart group-hover:scale-[1.03]"
+          />
+        ) : (
+          <span className="absolute inset-0 flex items-center justify-center text-sm text-ink-muted">Fotos próximamente</span>
+        )}
         <Badge status={p.status} className="absolute top-3 left-3" />
       </div>
 
@@ -78,7 +82,7 @@ export function PropertyCard({
             {p.title}
           </Link>
         </Heading>
-        <p className="mt-1 text-sm text-ink-muted">{formatLocation(p)}</p>
+        {formatLocation(p) ? <p className="mt-1 text-sm text-ink-muted">{formatLocation(p)}</p> : null}
         <div className="mt-3 flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1 border-t border-line pt-3">
           <Price amount={p.price} priceKind={p.priceKind} className="text-lg font-semibold text-ink" />
           {figures.length > 0 ? (
