@@ -50,3 +50,4 @@ next-env.d.ts
 /public/dev-assets/
 /bench-shots/
 /test-results/
+/shots/
