@@ -10,7 +10,7 @@ const labelClass = "block text-sm font-medium text-ink";
 export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
   const id = (name: string) => `${idPrefix}-${name}`;
   return (
-    <div className="flex flex-col gap-5">
+    <div className="@container flex flex-col gap-5">
       <div>
         <label htmlFor={id("q")} className={labelClass}>
           Sector o ciudad
@@ -18,7 +18,7 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
         <input id={id("q")} name="q" type="search" defaultValue={f.q ?? ""} maxLength={80} placeholder="Ej.: Cumbayá" className={field} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 @min-[19rem]:grid-cols-2">
         <div>
           <label htmlFor={id("operation")} className={labelClass}>
             Operación
@@ -65,7 +65,7 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
         </div>
       </fieldset>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 @min-[19rem]:grid-cols-2">
         <div>
           <label htmlFor={id("bedrooms")} className={labelClass}>
             Dormitorios

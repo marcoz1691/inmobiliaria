@@ -79,7 +79,7 @@ export default async function CatalogPage({ searchParams }: PageProps<"/propieda
 
           <div className="mt-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:gap-6">
             <SegmentedLinks label="Tipo de operación" options={operations} className="self-start" />
-            <ChipLinks label="Tipo de propiedad" options={types} className="-mx-5 px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:px-0" />
+            <ChipLinks label="Tipo de propiedad" options={types} className="-mx-5 px-5 sm:-mx-8 sm:px-8 lg:mx-0 lg:min-w-0 lg:flex-1 lg:px-0" />
           </div>
         </div>
       </header>
@@ -155,7 +155,7 @@ export default async function CatalogPage({ searchParams }: PageProps<"/propieda
             ) : (
               <EmptyState
                 headingLevel={2}
-                className="bg-white"
+                surface="white"
                 title={active ? "No encontramos propiedades con esos filtros" : "Aún no hay propiedades publicadas"}
                 description={
                   active
