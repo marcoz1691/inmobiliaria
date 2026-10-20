@@ -2,9 +2,13 @@ import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
 import { cn } from "@/components/ui/cn";
 
 export const inputClass =
-  "mt-1.5 block min-h-11 w-full rounded-sm border border-line-strong bg-white px-3 text-base text-ink " +
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy " +
+  "mt-1.5 block min-h-12 w-full rounded-sm border border-line-strong bg-white px-4 text-[1.0625rem] text-ink " +
+  "transition-[border-color] duration-200 placeholder:text-ink-muted hover:border-ink/70 " +
+  "focus-visible:border-navy focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-navy " +
   "aria-invalid:border-sold";
+
+/** `inputClass` for native selects. */
+export const selectClass = `${inputClass} select-chevron`;
 
 type BaseProps = { id: string; label: string; error?: string; hint?: string; optional?: boolean };
 
@@ -72,7 +76,7 @@ export function ConsentCheckbox({ id, text, error, name = "consent", ...input }:
           required
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
-          className="mt-0.5 size-6 shrink-0 accent-navy"
+          className="mt-0.5 size-6 shrink-0 rounded-xs accent-navy"
           {...input}
         />
         <label htmlFor={id} className="text-sm leading-relaxed text-ink-muted">
