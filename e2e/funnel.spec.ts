@@ -64,7 +64,8 @@ test("qualified lead from a Meta ad books the first available slot", async ({ pa
   expect(await file.text()).toContain("BEGIN:VEVENT");
 
   // The manage link shows the appointment and lets the visitor cancel it.
-  await page.getByRole("link", { name: "Gestionar mi cita" }).click();
+  const manage = await page.getByRole("link", { name: "Gestionar mi cita" }).getAttribute("href");
+  await page.goto(manage!);
   await expect(page.getByText("Confirmada", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Cancelar la cita" }).click();
   await page.getByRole("button", { name: "Sí, cancelar la cita" }).click();
