@@ -1,4 +1,6 @@
 import { SiteFooter } from "@/components/public/SiteFooter";
+import { whatsappHref } from "@/components/public/WhatsAppButton";
+import { ChatWidget } from "@/components/chat";
 import { SiteHeader, type NavItem } from "@/components/public/SiteHeader";
 import type { SocialLinks } from "@/server/db/schema";
 import { agentTagline, getSite } from "../_lib/site";
@@ -45,6 +47,7 @@ export default async function SiteLayout({ children }: { children: React.ReactNo
         location={agent?.city}
         legal={agent?.affiliation ? <p>{agent.affiliation}</p> : undefined}
       />
+      <ChatWidget whatsappHref={agent?.whatsapp ? whatsappHref(agent.whatsapp, "Hola, vi tu sitio y quisiera más información.") : null} />
     </>
   );
 }

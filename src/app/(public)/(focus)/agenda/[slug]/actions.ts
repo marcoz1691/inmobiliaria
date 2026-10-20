@@ -8,12 +8,19 @@ import { availableSlots, bookSlot, getActiveFunnel, submissionSchema, submitFunn
 import { formatAppointment, groupSlotsByDay } from "@/components/funnel/slots";
 import { MEETING_LABEL, type BookResult, type FunnelSubmitInput, type FunnelSubmitResult, type Schedule } from "@/components/funnel/types";
 import { getCurrentTenant } from "@/server/tenant";
+import { getDb } from "@/server/db/client";
+import { googleBusyProvider } from "@/modules/integrations/google";
 import { checkPublicForm, GUARD_MESSAGE } from "../../../_lib/guard";
 
 const slugSchema = z.string().regex(/^[a-z0-9-]{1,60}$/);
 
+/** External busy times (Google Calendar) when the agent connected it; resolved outside the booking transaction. */
+async function busy(tenantId: string) {
+  return googleBusyProvider(await getDb(), tenantId);
+}
+
 async function schedule(tenantId: string, funnelId: string): Promise<Schedule> {
-  const s = await availableSlots(tenantId, funnelId);
+  const s = await availableSlots(tenantId, funnelId, { busyProvider: await busy(tenantId) });
   return { timezone: s.timezone, durationMinutes: s.durationMinutes, days: groupSlotsByDay(s.slots, s.timezone) };
 }
 
@@ -93,6 +100,7 @@ export async function bookSlotAction(slug: string, input: { submissionId: string
       submissionId: parsed.data.submissionId,
       pass: parsed.data.pass,
       startsAt: new Date(parsed.data.startsAt),
+      busyProvider: await busy(ctx.tenant.id),
     });
     return {
       ok: true,
