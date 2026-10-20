@@ -37,7 +37,7 @@ describe("Meta webhook processing", () => {
 
   beforeAll(async () => {
     db = await useTestDb();
-    // resolveTenant uses DEFAULT_TENANT_SLUG ("piloto" by default).
+    // No channel_accounts registered here: resolveTenant falls back to DEFAULT_TENANT_SLUG ("piloto").
     piloto = await seedTenant(db, "piloto");
     await seedTenant(db, "otro");
     await db

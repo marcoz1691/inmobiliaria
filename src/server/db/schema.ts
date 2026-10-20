@@ -425,9 +425,20 @@ export const funnelSubmissions = pgTable(
     fbc: text("fbc"),
     fbp: text("fbp"),
     clientEventId: text("client_event_id"),
+    /**
+     * Visitor IP and user agent for the Conversions API (personal data). Captured only while CAPI is
+     * connected, cleared once the event is sent or after 7 days (src/modules/funnels/client-data.ts).
+     */
+    clientIp: text("client_ip"),
+    clientUa: text("client_ua"),
+    clientCapturedAt: timestamp("client_captured_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
-  (t) => [index("funnel_submissions_funnel_idx").on(t.tenantId, t.funnelId, t.createdAt), tenantIsolation("funnel_submissions")],
+  (t) => [
+    index("funnel_submissions_funnel_idx").on(t.tenantId, t.funnelId, t.createdAt),
+    index("funnel_submissions_client_captured_idx").on(t.clientCapturedAt).where(sql`${t.clientCapturedAt} is not null`),
+    tenantIsolation("funnel_submissions"),
+  ],
 );
 
 export const availabilityRules = pgTable(
@@ -586,6 +597,29 @@ export const adEvents = pgTable(
 );
 
 /* ───────────────────────────── Conversations ───────────────────────────── */
+
+export const channelProvider = pgEnum("channel_provider", ["whatsapp", "page", "instagram"]);
+
+/**
+ * Meta accounts (WhatsApp phone_number_id, Facebook page id, Instagram account id) owned by a
+ * tenant. Webhooks are routed with this table; an id belongs to at most one tenant.
+ */
+export const channelAccounts = pgTable(
+  "channel_accounts",
+  {
+    id: id(),
+    tenantId: tenantId(),
+    provider: channelProvider("provider").notNull(),
+    externalId: text("external_id").notNull(),
+    label: text("label"),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    uniqueIndex("channel_accounts_provider_external_uq").on(t.provider, t.externalId),
+    index("channel_accounts_tenant_idx").on(t.tenantId),
+    tenantIsolation("channel_accounts"),
+  ],
+);
 
 export const channel = pgEnum("channel", ["web", "whatsapp", "instagram", "messenger"]);
 

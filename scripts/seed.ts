@@ -1,6 +1,7 @@
 /**
  * Idempotent seed for the pilot tenant.
  * - Creates the tenant, localhost domains, owner account, membership and agent profile.
+ * - Registers WHATSAPP_PHONE_NUMBER_ID (when set) as the tenant's WhatsApp channel account.
  * - Uploads the agent photo from assets-input/perfil/foto-agente.jpeg when present.
  * Never invents personal data: contact fields stay empty until filled in the panel.
  */
@@ -10,7 +11,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { and, eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import { createDb } from "../src/server/db/create";
-import { account, agentProfiles, memberships, tenantDomains, tenants, user } from "../src/server/db/schema";
+import { account, agentProfiles, channelAccounts, memberships, tenantDomains, tenants, user } from "../src/server/db/schema";
 import { processImage } from "../src/modules/media/process";
 
 const TENANT_SLUG = process.env.DEFAULT_TENANT_SLUG ?? "piloto";
@@ -68,6 +69,19 @@ export async function seed() {
       await storage.put(`${baseKey}-${[480, 960, 1600][processed.variants.indexOf(v)]}.webp`, v.body, "image/webp");
     }
     await db.update(agentProfiles).set({ photoUrl: `media:${storage.url(baseKey)}` }).where(eq(agentProfiles.id, agent!.id));
+  }
+
+  // WhatsApp webhooks for this number are routed to this tenant (channel_accounts).
+  const phoneNumberId = process.env.WHATSAPP_PHONE_NUMBER_ID?.trim();
+  if (phoneNumberId) {
+    await db.insert(channelAccounts).values({ tenantId, provider: "whatsapp", externalId: phoneNumberId, label: "WHATSAPP_PHONE_NUMBER_ID" }).onConflictDoNothing();
+    const [owned] = await db
+      .select({ tenantId: channelAccounts.tenantId })
+      .from(channelAccounts)
+      .where(and(eq(channelAccounts.provider, "whatsapp"), eq(channelAccounts.externalId, phoneNumberId)));
+    if (owned?.tenantId !== tenantId) {
+      console.warn(JSON.stringify({ level: "warn", msg: "WHATSAPP_PHONE_NUMBER_ID is registered to another tenant; not reassigned" }));
+    }
   }
 
   // Test-only fixtures (funnel "comprador", availability, sample listings). Never on by default.
