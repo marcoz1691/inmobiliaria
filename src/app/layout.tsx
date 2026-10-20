@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import { env } from "@/env";
 import "./globals.css";
@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   metadataBase: new URL(env.APP_URL),
   title: "Asesoría inmobiliaria",
   description: "Propiedades seleccionadas y acompañamiento personal en Ecuador.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#ffffff",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
