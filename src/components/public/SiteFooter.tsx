@@ -16,27 +16,39 @@ type SiteFooterProps = {
   location?: string | null;
   /** Legal or licensing line supplied by the agent (never invented). */
   legal?: ReactNode;
+  privacyHref?: string;
 };
 
-const linkClass =
-  "inline-flex min-h-11 items-center text-paper underline-offset-4 hover:underline focus-visible:outline-paper";
+const linkClass = "inline-flex min-h-11 items-center text-ink-muted underline-offset-4 transition-colors hover:text-ink hover:underline";
+const headingClass = "text-xs font-semibold tracking-normal text-ink";
 
-export function SiteFooter({ name, tagline, nav, email, whatsapp, phone, socials = [], location, legal }: SiteFooterProps) {
+export function SiteFooter({
+  name,
+  tagline,
+  nav,
+  email,
+  whatsapp,
+  phone,
+  socials = [],
+  location,
+  legal,
+  privacyHref = "/privacidad",
+}: SiteFooterProps) {
   const wa = whatsapp ? whatsappHref(whatsapp, `Hola ${name}, quisiera más información.`) : null;
   const year = new Date().getFullYear();
 
   return (
-    <footer className="mt-auto bg-ink text-paper">
-      <div className="mx-auto max-w-7xl px-5 pt-16 pb-10 sm:px-8 lg:px-12 lg:pt-20">
-        <div className="grid grid-cols-2 gap-x-6 gap-y-12 lg:grid-cols-12">
+    <footer className="mt-auto bg-sand text-sm">
+      <div className="mx-auto max-w-7xl px-5 pt-12 pb-8 sm:px-8 lg:px-12 lg:pt-16">
+        <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-b border-line pb-10 lg:grid-cols-12">
           <div className="col-span-2 lg:col-span-6">
-            <p className="font-display text-display-md text-paper">{name}</p>
-            {tagline ? <p className="mt-2 text-sm text-paper-muted">{tagline}</p> : null}
+            <p className="text-headline text-ink">{name}</p>
+            {tagline ? <p className="mt-1 text-ink-muted">{tagline}</p> : null}
           </div>
 
           <nav aria-label="Pie de página" className="lg:col-span-3">
-            <h2 className="text-eyebrow text-paper-muted uppercase">Explora</h2>
-            <ul className="mt-3">
+            <h2 className={headingClass}>Explora</h2>
+            <ul className="mt-2">
               {nav.map((item) => (
                 <li key={item.href}>
                   <Link href={item.href} className={linkClass}>
@@ -49,8 +61,8 @@ export function SiteFooter({ name, tagline, nav, email, whatsapp, phone, socials
 
           {email || wa || phone || location || socials.length ? (
             <div className="lg:col-span-3">
-              <h2 className="text-eyebrow text-paper-muted uppercase">Contacto</h2>
-              <ul className="mt-3">
+              <h2 className={headingClass}>Contacto</h2>
+              <ul className="mt-2">
                 {wa ? (
                   <li>
                     <a href={wa} target="_blank" rel="noopener noreferrer" className={linkClass}>
@@ -60,7 +72,7 @@ export function SiteFooter({ name, tagline, nav, email, whatsapp, phone, socials
                 ) : null}
                 {email ? (
                   <li>
-                    <a href={`mailto:${email}`} className={linkClass}>
+                    <a href={`mailto:${email}`} className={`${linkClass} break-all`}>
                       {email}
                     </a>
                   </li>
@@ -80,16 +92,21 @@ export function SiteFooter({ name, tagline, nav, email, whatsapp, phone, socials
                     </a>
                   </li>
                 ))}
-                {location ? <li className="py-3 text-paper-muted">{location}</li> : null}
+                {location ? <li className="py-3 text-ink-muted">{location}</li> : null}
               </ul>
             </div>
           ) : null}
         </div>
 
-        <div className="mt-16 flex flex-col gap-2 border-t border-paper/20 pt-6 text-xs text-paper-muted sm:flex-row sm:justify-between">
-          <p>
-            © {year} {name}
-          </p>
+        <div className="flex flex-col gap-x-6 gap-y-1 pt-4 text-xs text-ink-muted sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-wrap items-center gap-x-4">
+            <p>
+              © {year} {name}
+            </p>
+            <Link href={privacyHref} className={linkClass}>
+              Privacidad
+            </Link>
+          </div>
           {legal ? <div>{legal}</div> : null}
         </div>
       </div>
