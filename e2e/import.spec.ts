@@ -1,11 +1,12 @@
 import { existsSync } from "node:fs";
-import { expect, test } from "@playwright/test";
-import { login } from "./helpers";
-import { warmUp } from "./fixtures/warmup";
+import { expect as baseExpect, test } from "@playwright/test";
+import { loginPatient as login, warmUp } from "./fixtures/warmup";
 
 const PDF = "assets-input/pdfs/Casa Pomasqui.pdf";
 
-test.describe.configure({ timeout: 180_000 });
+test.describe.configure({ timeout: 360_000 });
+/** Dev server compiles on demand; give UI updates more room than the default 5 s. */
+const expect = baseExpect.configure({ timeout: 15_000 });
 
 test("import a property sheet PDF into a reviewable draft", async ({ page }, info) => {
   test.skip(!existsSync(PDF), "Falta assets-input/pdfs/Casa Pomasqui.pdf");
@@ -16,7 +17,7 @@ test("import a property sheet PDF into a reviewable draft", async ({ page }, inf
 
   // The same file can be imported only once per tenant; the second project sees the dedupe message.
   const review = page.getByRole("link", { name: "Ver revisión" });
-  await expect(review).toBeVisible({ timeout: 90_000 });
+  await expect(review).toBeVisible({ timeout: 180_000 });
   if (info.project.name !== "desktop") await expect(page.getByText(/ya se importó antes/)).toBeVisible();
   await review.click();
   await expect(page).toHaveURL(/\/panel\/importar\/[0-9a-f-]{36}$/);

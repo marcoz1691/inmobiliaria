@@ -1,9 +1,10 @@
-import { expect, test, type Page } from "@playwright/test";
-import { login } from "./helpers";
+import { expect as baseExpect, test, type Page } from "@playwright/test";
 import { makePhotos } from "./fixtures/images";
-import { warmUp } from "./fixtures/warmup";
+import { loginPatient as login, warmUp } from "./fixtures/warmup";
 
 test.describe.configure({ timeout: 180_000 });
+/** Dev server compiles on demand; give UI updates more room than the default 5 s. */
+const expect = baseExpect.configure({ timeout: 15_000 });
 test.beforeAll(async ({ request }) => {
   await warmUp(request, ["/api/auth/get-session", "/panel", "/panel/ingresar", "/panel/propiedades", "/panel/propiedades/nueva", "/panel/propiedades/00000000-0000-0000-0000-000000000000", "/propiedades"]);
 });
@@ -91,6 +92,10 @@ test("publish a property from the wizard, pause it, duplicate and archive", asyn
   const dup = page.getByRole("dialog", { name: "¿Duplicar esta propiedad?" });
   await expect(dup).toBeVisible();
   await dup.getByRole("button", { name: "Duplicar" }).click();
+  // The copy opens in the editor as a draft.
+  await expect(page.getByLabel("Título")).toHaveValue(`${title} (copia)`);
+  await expect(page.getByText("Borrador", { exact: true }).first()).toBeVisible();
+  await page.goto(`/panel/propiedades?q=${encodeURIComponent(title)}`);
   await expect(page.getByRole("heading", { name: `${title} (copia)` })).toBeVisible();
 
   // Archive with confirmation.

@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { canTransition, type PropertyStatus } from "@/modules/properties/domain";
@@ -17,11 +17,16 @@ export function PropertyActions({ id, title, status, slug }: Props) {
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [pending, start] = useTransition();
   const name = title || "Propiedad sin título";
+  const menu = useRef<HTMLDetailsElement>(null);
+  const closeMenu = () => {
+    if (menu.current) menu.current.open = false;
+  };
 
   function move(to: PropertyStatus, done: string) {
     start(async () => {
       const r = await changeStatusAction(id, to);
       setMessage(r.ok ? { text: done } : { text: r.error, error: true });
+      closeMenu();
       if (r.ok) router.refresh();
     });
   }
@@ -44,7 +49,7 @@ export function PropertyActions({ id, title, status, slug }: Props) {
       >
         Editar<span className="sr-only"> {name}</span>
       </Link>
-      <details className="group relative">
+      <details ref={menu} className="group relative">
         <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 rounded-full px-4 text-sm font-medium text-ink hover:bg-ink/5 [&::-webkit-details-marker]:hidden">
           Más acciones<span className="sr-only"> para {name}</span>
           <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4 transition-transform group-open:rotate-180" fill="none" stroke="currentColor" strokeWidth="1.6">
@@ -64,13 +69,14 @@ export function PropertyActions({ id, title, status, slug }: Props) {
           ) : null}
           <ConfirmDialog
             title="¿Duplicar esta propiedad?"
-            description={<>Se creará un borrador con los mismos datos y fotos de «{name}». La original no cambia.</>}
+            description={<>Se creará un borrador con los mismos datos y fotos de «{name}» y se abrirá para que lo edites. La original no cambia.</>}
             confirmLabel="Duplicar"
             onConfirm={async () => {
               const r = await duplicateAction(id);
               if (!r.ok) return r.error;
-              setMessage({ text: "Copia creada como borrador." });
-              router.refresh();
+              setMessage({ text: "Copia creada como borrador. Abriendo…" });
+              closeMenu();
+              router.push(`/panel/propiedades/${r.data.id}`);
             }}
             trigger={(open) => (
               <button type="button" className={itemClass} onClick={open}>
@@ -88,6 +94,7 @@ export function PropertyActions({ id, title, status, slug }: Props) {
                 const r = await changeStatusAction(id, "archived");
                 if (!r.ok) return r.error;
                 setMessage({ text: "Archivada." });
+                closeMenu();
                 router.refresh();
               }}
               trigger={(open) => (
@@ -111,6 +118,7 @@ export function PropertyActions({ id, title, status, slug }: Props) {
               onConfirm={async () => {
                 const r = await deleteDraftAction(id);
                 if (!r.ok) return r.error;
+                closeMenu();
                 router.refresh();
               }}
               trigger={(open) => (
