@@ -8,7 +8,8 @@ type AgentHeroProps = {
   name: string;
   /** Value proposition, rendered as the page h1. */
   headline: ReactNode;
-  photoSrc: string;
+  /** Real portrait of the agent. Without it the hero is text only (no stand-in image). */
+  photoSrc?: string | null;
   photoAlt?: string;
   /** Agent's WhatsApp number; the secondary CTA is omitted without it. */
   whatsapp?: string | null;
@@ -42,7 +43,7 @@ export function AgentHero({
   return (
     <section aria-labelledby="hero-title" className="mx-auto max-w-7xl px-5 pt-10 pb-16 sm:px-8 lg:px-12 lg:pt-16 lg:pb-24">
       <div className="grid gap-10 lg:grid-cols-12 lg:gap-x-12 lg:gap-y-12">
-        <div className="lg:col-span-7 lg:self-end">
+        <div className={photoSrc ? "lg:col-span-7 lg:self-end" : "lg:col-span-9"}>
           {eyebrow ? <p className="text-eyebrow font-medium text-clay uppercase">{eyebrow}</p> : null}
           <h1 id="hero-title" className="mt-5 font-display text-display-xl text-balance text-ink">
             {headline}
@@ -62,23 +63,25 @@ export function AgentHero({
           </div>
         </div>
 
-        <figure className="-mx-5 sm:mx-0 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
-          <div className="relative aspect-[4/5] overflow-hidden bg-sand sm:rounded-sm">
-            <Image
-              src={photoSrc}
-              unoptimized={isUnsizedSource(photoSrc)}
-              alt={photoAlt ?? `Retrato de ${name}`}
-              fill
-              preload
-              sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
-              className="object-cover object-top"
-            />
-          </div>
-          <figcaption className="mt-3 flex items-baseline justify-between gap-4 px-5 text-sm sm:px-0">
-            <span className="font-medium text-ink">{name}</span>
-            {role ? <span className="text-ink-muted">{role}</span> : null}
-          </figcaption>
-        </figure>
+        {photoSrc ? (
+          <figure className="-mx-5 sm:mx-0 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1">
+            <div className="relative aspect-[4/5] overflow-hidden bg-sand sm:rounded-sm">
+              <Image
+                src={photoSrc}
+                unoptimized={isUnsizedSource(photoSrc)}
+                alt={photoAlt ?? `Retrato de ${name}`}
+                fill
+                preload
+                sizes="(min-width: 1280px) 500px, (min-width: 1024px) 40vw, 100vw"
+                className="object-cover object-top"
+              />
+            </div>
+            <figcaption className="mt-3 flex items-baseline justify-between gap-4 px-5 text-sm sm:px-0">
+              <span className="font-medium text-ink">{name}</span>
+              {role ? <span className="text-ink-muted">{role}</span> : null}
+            </figcaption>
+          </figure>
+        ) : null}
 
         {areas && areas.length > 0 ? (
           <div className="border-t border-line pt-5 lg:col-span-7 lg:row-start-2 lg:self-start">

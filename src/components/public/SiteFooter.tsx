@@ -9,6 +9,9 @@ type SiteFooterProps = {
   nav: NavItem[];
   email?: string | null;
   whatsapp?: string | null;
+  phone?: string | null;
+  /** Social profiles the agent filled in (absolute https URLs). */
+  socials?: { label: string; href: string }[];
   /** Office or coverage area; shown as given. */
   location?: string | null;
   /** Legal or licensing line supplied by the agent (never invented). */
@@ -18,7 +21,7 @@ type SiteFooterProps = {
 const linkClass =
   "inline-flex min-h-11 items-center text-paper underline-offset-4 hover:underline focus-visible:outline-paper";
 
-export function SiteFooter({ name, tagline, nav, email, whatsapp, location, legal }: SiteFooterProps) {
+export function SiteFooter({ name, tagline, nav, email, whatsapp, phone, socials = [], location, legal }: SiteFooterProps) {
   const wa = whatsapp ? whatsappHref(whatsapp, `Hola ${name}, quisiera más información.`) : null;
   const year = new Date().getFullYear();
 
@@ -44,7 +47,7 @@ export function SiteFooter({ name, tagline, nav, email, whatsapp, location, lega
             </ul>
           </nav>
 
-          {email || wa || location ? (
+          {email || wa || phone || location || socials.length ? (
             <div className="lg:col-span-3">
               <h2 className="text-eyebrow text-paper-muted uppercase">Contacto</h2>
               <ul className="mt-3">
@@ -62,6 +65,21 @@ export function SiteFooter({ name, tagline, nav, email, whatsapp, location, lega
                     </a>
                   </li>
                 ) : null}
+                {phone ? (
+                  <li>
+                    <a href={`tel:${phone.replace(/[^\d+]/g, "")}`} className={linkClass}>
+                      {phone}
+                    </a>
+                  </li>
+                ) : null}
+                {socials.map((s) => (
+                  <li key={s.href}>
+                    <a href={s.href} target="_blank" rel="noopener noreferrer" className={linkClass}>
+                      {s.label}
+                      <span className="sr-only"> (se abre en una pestaña nueva)</span>
+                    </a>
+                  </li>
+                ))}
                 {location ? <li className="py-3 text-paper-muted">{location}</li> : null}
               </ul>
             </div>
