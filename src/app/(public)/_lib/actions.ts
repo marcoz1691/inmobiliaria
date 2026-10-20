@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { AppError } from "@/lib/errors";
 import { errorInfo, log } from "@/lib/logger";
@@ -67,6 +68,7 @@ export async function cancelBooking(_prev: FormState, fd: FormData): Promise<For
   try {
     const tenant = await getCurrentTenant();
     await cancelBookingByToken(tenant.id, token);
+    revalidatePath(`/cita/${token}`);
     return { status: "success", message: "Tu cita fue cancelada." };
   } catch (err) {
     if (err instanceof AppError) {

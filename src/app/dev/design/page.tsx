@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { env } from "@/env";
 import { AgentHero } from "@/components/public/AgentHero";
 import { OPERATION_LABEL, formatLocation } from "@/components/public/format";
 import { PropertyCard } from "@/components/public/PropertyCard";
@@ -38,6 +40,8 @@ const NAV: NavItem[] = [
 const container = "mx-auto max-w-7xl px-5 sm:px-8 lg:px-12";
 
 export default function DesignDemoPage() {
+  // Internal design reference: never served in production.
+  if (env.NODE_ENV === "production") notFound();
   const [lead, ...rest] = demoProperties;
   if (!lead) return null;
 
