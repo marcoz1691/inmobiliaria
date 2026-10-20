@@ -2,7 +2,8 @@ import Link from "next/link";
 import type { AnchorHTMLAttributes, ButtonHTMLAttributes, ReactNode } from "react";
 import { cn } from "./cn";
 
-export type ButtonVariant = "primary" | "secondary" | "ghost";
+/** `inverse` is the white pill for dark (night/ink) sections. */
+export type ButtonVariant = "primary" | "secondary" | "ghost" | "inverse";
 export type ButtonSize = "md" | "lg";
 
 type CommonProps = {
@@ -24,14 +25,15 @@ type NativeButtonProps = Omit<ButtonHTMLAttributes<HTMLButtonElement>, keyof Com
 export type ButtonProps = CommonProps & (AnchorProps | NativeButtonProps);
 
 const base =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap " +
-  "transition-colors duration-150 ease-out select-none " +
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full font-medium whitespace-nowrap tracking-[-0.01em] " +
+  "transition-[background-color,color,border-color,transform] duration-300 ease-apple select-none active:scale-[0.97] " +
   "disabled:pointer-events-none disabled:opacity-50";
 
 const variants: Record<ButtonVariant, string> = {
-  primary: "bg-navy text-white hover:bg-navy-hover active:bg-ink",
+  primary: "bg-navy text-white hover:bg-navy-hover",
   secondary: "border border-navy text-navy hover:bg-navy hover:text-white",
   ghost: "text-ink underline-offset-4 hover:bg-ink/5 hover:underline",
+  inverse: "bg-white text-ink hover:bg-mist",
 };
 
 const sizes: Record<ButtonSize, string> = {

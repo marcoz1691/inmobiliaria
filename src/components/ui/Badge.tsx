@@ -12,14 +12,17 @@ export function statusLabel(status: PropertyStatus): string {
   return STATUS[status].label;
 }
 
-/** Property status. The text label carries the meaning; color only reinforces it. */
-export function Badge({ status, className }: { status: PropertyStatus; className?: string }) {
+/**
+ * Property status. The text label carries the meaning; color only reinforces it.
+ * `overlay` is a frosted pill for use on top of photos (ink text, colored dot).
+ */
+export function Badge({ status, className, overlay = false }: { status: PropertyStatus; className?: string; overlay?: boolean }) {
   const s = STATUS[status];
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-xs px-2 py-1 text-xs font-medium leading-none",
-        s.className,
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold leading-none tracking-normal",
+        overlay ? "bg-white/90 text-ink shadow-[0_1px_2px_rgb(0_0_0/0.08)] backdrop-blur-md" : s.className,
         className,
       )}
     >

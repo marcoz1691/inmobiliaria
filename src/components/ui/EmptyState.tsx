@@ -14,21 +14,20 @@ type EmptyStateProps = {
   className?: string;
 };
 
-const TONE: Record<EmptyStateTone, { rule: string; icon: ReactNode; role: "status" | "alert" }> = {
+/** Each tone has its own icon shape, so the state never depends on color alone. */
+const TONE: Record<EmptyStateTone, { disc: string; icon: ReactNode; role: "status" | "alert" }> = {
   empty: {
-    rule: "border-line-strong",
+    disc: "bg-mist text-ink",
     role: "status",
-    icon: (
-      <path d="M4 11.5 12 5l8 6.5M6.5 9.5V19h11V9.5M10 19v-5h4v5" />
-    ),
+    icon: <path d="M4 11.5 12 5l8 6.5M6.5 9.5V19h11V9.5M10 19v-5h4v5" />,
   },
   error: {
-    rule: "border-sold",
+    disc: "bg-sold-bg text-sold",
     role: "alert",
     icon: <path d="M12 8v5m0 3.5v.01M10.3 4.3 2.9 17a2 2 0 0 0 1.7 3h14.8a2 2 0 0 0 1.7-3L13.7 4.3a2 2 0 0 0-3.4 0Z" />,
   },
   success: {
-    rule: "border-available",
+    disc: "bg-available-bg text-available",
     role: "status",
     icon: <path d="m5 12.5 4.5 4.5L19 7.5" />,
   },
@@ -46,20 +45,21 @@ export function EmptyState({
   const t = TONE[tone];
   const Heading = `h${headingLevel}` as const;
   return (
-    <div role={t.role} className={cn("border-t-2 pt-6", t.rule, className)}>
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="size-6 text-ink-muted"
-      >
-        {t.icon}
-      </svg>
-      <Heading className="mt-4 font-display text-2xl leading-tight text-ink">{title}</Heading>
+    <div role={t.role} className={cn("rounded-md bg-sand p-6 sm:p-8", className)}>
+      <span aria-hidden="true" className={cn("inline-flex size-12 items-center justify-center rounded-full", t.disc)}>
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.6"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="size-6"
+        >
+          {t.icon}
+        </svg>
+      </span>
+      <Heading className="mt-4 font-display text-headline text-ink">{title}</Heading>
       {description ? <div className="mt-2 max-w-prose text-base text-ink-muted">{description}</div> : null}
       {action ? <div className="mt-6">{action}</div> : null}
     </div>

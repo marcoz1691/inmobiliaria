@@ -7,18 +7,23 @@
 @theme {
   /* Neutrals */
   --color-paper: #ffffff; /* page background */
-  --color-sand: #f5f5f7; /* alternate sections, image placeholders */
+  --color-sand: #f5f5f7; /* alternate light sections, tiles, image placeholders */
+  --color-mist: #e8e8ed; /* chips and pressed states on sand */
+  --color-night: #000000; /* full-bleed dark sections */
   --color-white: #ffffff;
-  --color-line: #d2d2d7; /* hairlines */
-  --color-line-strong: #86868b; /* UI boundaries (3.6:1 on white) */
-  --color-ink: #1d1d1f; /* text (16.8:1 on white) */
-  --color-ink-muted: #6e6e73; /* secondary text (5.07:1 white, 4.64:1 sand) */
-  --color-paper-muted: #a1a1a6; /* secondary text on ink (7.3:1) */
+  --color-line: #d2d2d7; /* hairlines (decorative) */
+  --color-line-strong: #86868b; /* UI boundaries: 3.62:1 white, 3.33:1 sand */
+  --color-ink: #1d1d1f; /* text: 16.83:1 white, 15.46:1 sand */
+  --color-ink-muted: #6e6e73; /* secondary text: 5.07:1 white, 4.66:1 sand */
+  --color-paper-muted: #a1a1a6; /* secondary text on dark: 8.16:1 night, 6.54:1 ink */
 
   /* Brand */
-  --color-navy: #0068d6; /* primary actions: blue pill (white on it 5.1:1) */
-  --color-navy-hover: #0058b8; /* white on it 6.6:1 */
-  --color-clay: #b64400; /* eyebrow accent (5.3:1 white, 4.8:1 sand) */
+  --color-navy: #0071e3; /* primary actions, focus ring: white on it 4.70:1; 4.47:1 against night */
+  --color-navy-hover: #0062c4; /* white on it 5.93:1 */
+  --color-link: #0066cc; /* text links on light: 5.57:1 white, 5.11:1 sand */
+  --color-link-dark: #2997ff; /* text links on dark: 6.96:1 night, 5.58:1 ink */
+  --color-clay: #b64400; /* eyebrow accent on light: 5.50:1 white, 5.05:1 sand */
+  --color-clay-bright: #f56300; /* eyebrow accent on dark: 6.67:1 night */
 
   /* Property status (fg on bg) */
   --color-available: #1e5236;
@@ -30,31 +35,40 @@
   --color-rented: #25446a;
   --color-rented-bg: #e1e8f1; /* 8.05:1 */
 
-  /* Type scale (fluid). Body uses Tailwind's default text-sm/base/lg. */
-  --text-eyebrow: 0.8125rem;
-  --text-eyebrow--line-height: 1.25rem;
-  --text-eyebrow--letter-spacing: 0.01em;
+  /* Type scale (fluid, 390px → 1440px). Body is 17px; text-sm/base/lg stay Tailwind's. */
+  --text-eyebrow: 0.9375rem;
+  --text-eyebrow--line-height: 1.3;
+  --text-eyebrow--letter-spacing: -0.005em;
   --text-eyebrow--font-weight: 600;
-  --text-display-xl: clamp(2.75rem, 1.4rem + 5vw, 5.25rem);
-  --text-display-xl--line-height: 1.04;
-  --text-display-xl--letter-spacing: -0.03em;
+  --text-display-xl: clamp(3rem, 1.6rem + 5.6vw, 6rem);
+  --text-display-xl--line-height: 1.02;
+  --text-display-xl--letter-spacing: -0.032em;
   --text-display-xl--font-weight: 700;
-  --text-display-lg: clamp(2.125rem, 1.4rem + 2.8vw, 3.5rem);
-  --text-display-lg--line-height: 1.07;
-  --text-display-lg--letter-spacing: -0.025em;
+  --text-display-lg: clamp(2.25rem, 1.5rem + 3vw, 4rem);
+  --text-display-lg--line-height: 1.05;
+  --text-display-lg--letter-spacing: -0.028em;
   --text-display-lg--font-weight: 700;
-  --text-display-md: clamp(1.5rem, 1.25rem + 1vw, 2rem);
-  --text-display-md--line-height: 1.15;
-  --text-display-md--letter-spacing: -0.018em;
+  --text-display-md: clamp(1.625rem, 1.3rem + 1.3vw, 2.5rem);
+  --text-display-md--line-height: 1.1;
+  --text-display-md--letter-spacing: -0.022em;
   --text-display-md--font-weight: 600;
+  --text-headline: clamp(1.25rem, 1.1rem + 0.5vw, 1.5rem);
+  --text-headline--line-height: 1.2;
+  --text-headline--letter-spacing: -0.016em;
+  --text-headline--font-weight: 600;
+  --text-lead: clamp(1.1875rem, 1rem + 0.6vw, 1.5rem);
+  --text-lead--line-height: 1.42;
+  --text-lead--letter-spacing: -0.012em;
 
-  /* Radii: soft, generous. Full pills are reserved for actions. */
-  --radius-xs: 6px;
-  --radius-sm: 14px;
-  --radius-md: 22px;
+  /* Radii: soft and generous. Full pills are reserved for actions and chips. */
+  --radius-xs: 8px; /* badges, small controls */
+  --radius-sm: 14px; /* inputs, option tiles, small photos */
+  --radius-md: 22px; /* cards, panels, gallery */
+  --radius-lg: 32px; /* hero media, large feature panels */
 
   /* Motion */
   --ease-out-quart: cubic-bezier(0.25, 1, 0.5, 1);
+  --ease-apple: cubic-bezier(0.28, 0.11, 0.32, 1);
 
   --animate-shimmer: shimmer 1.6s ease-in-out infinite;
   @keyframes shimmer {
@@ -64,6 +78,25 @@
     }
     50% {
       opacity: 0.5;
+    }
+  }
+  --animate-rise: rise 0.9s var(--ease-apple) both;
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(18px);
+    }
+  }
+  --animate-fade: fade 0.45s var(--ease-apple) both;
+  @keyframes fade {
+    from {
+      opacity: 0;
+    }
+  }
+  --animate-settle: settle 1.4s var(--ease-apple) both;
+  @keyframes settle {
+    from {
+      transform: scale(1.06);
     }
   }
 }
@@ -78,10 +111,12 @@
 @layer base {
   :root {
     color-scheme: light;
+    /* Height of the mobile sticky action bar, when a page renders one (see [data-sticky-cta]). */
+    --sticky-cta-h: 0px;
   }
 
   html {
-    scroll-padding-top: 5rem; /* keep anchored content clear of the sticky header */
+    scroll-padding-top: 4.5rem; /* keep anchored content clear of the sticky header */
   }
 
   body {
@@ -89,8 +124,11 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: 1.0625rem;
-    letter-spacing: -0.01em;
+    line-height: 1.47;
+    letter-spacing: -0.011em;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 
   ::selection {
@@ -103,6 +141,15 @@
     outline-offset: 3px;
   }
 
+  @media (max-width: 1023.98px) {
+    :root:has([data-sticky-cta]) {
+      --sticky-cta-h: 4.75rem;
+    }
+    :root:has([data-sticky-cta]) body {
+      padding-bottom: var(--sticky-cta-h);
+    }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     *,
     *::before,
@@ -110,6 +157,7 @@
       animation-duration: 0.01ms !important;
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
+      transition-delay: 0ms !important;
       scroll-behavior: auto !important;
     }
   }
@@ -119,5 +167,106 @@
   scrollbar-width: none;
   &::-webkit-scrollbar {
     display: none;
+  }
+}
+
+/* Native <select> with a quiet chevron instead of the platform arrow. */
+@utility select-chevron {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none' stroke='%236e6e73' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m1 1.5 5 5 5-5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 0.75rem;
+  padding-right: 2.5rem;
+}
+
+/* Translucent chrome (navigation bars). Solid where backdrop-filter is unsupported. */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.94);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: rgb(255 255 255 / 0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+}
+
+@utility glass-dark {
+  background-color: rgb(29 29 31 / 0.94);
+  @supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+    background-color: rgb(29 29 31 / 0.72);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+    backdrop-filter: saturate(180%) blur(20px);
+  }
+}
+
+/*
+ * Scroll reveal (src/components/ui/Reveal.tsx). Only elements that start below the fold are
+ * ever hidden, and only after hydration, so first paint and LCP are never delayed.
+ */
+[data-reveal] {
+  transition:
+    opacity 0.9s var(--ease-apple),
+    transform 0.9s var(--ease-apple);
+  transition-delay: var(--reveal-delay, 0ms);
+}
+[data-reveal="hidden"] {
+  opacity: 0;
+  transform: translateY(2.5rem);
+}
+
+/*
+ * Scroll-linked effects (CSS scroll-driven animations). Browsers without support, and anyone
+ * asking for reduced motion, get the static layout.
+ */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    /* Media slowly drifts inside its frame while the frame crosses the viewport. */
+    .scroll-parallax {
+      animation: parallax linear both;
+      animation-timeline: view();
+      animation-range: cover 0% cover 100%;
+    }
+    /* Frame grows to full size as it enters, like a product shot settling into place. */
+    .scroll-grow {
+      animation: grow linear both;
+      animation-timeline: view();
+      animation-range: entry 0% cover 40%;
+    }
+    /* PropertySpotlight: the pinned photo zooms out while its section scrolls by. */
+    .spotlight {
+      view-timeline-name: --spotlight;
+    }
+    .spotlight-media {
+      animation: zoom-out linear both;
+      animation-timeline: --spotlight;
+      animation-range: contain 0% contain 100%;
+    }
+  }
+}
+
+@keyframes zoom-out {
+  from {
+    transform: scale(1.16);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@keyframes parallax {
+  from {
+    transform: translateY(-4%) scale(1.1);
+  }
+  to {
+    transform: translateY(4%) scale(1.1);
+  }
+}
+
+@keyframes grow {
+  from {
+    transform: scale(0.92);
+  }
+  to {
+    transform: scale(1);
   }
 }
