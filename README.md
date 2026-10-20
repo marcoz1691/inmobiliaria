@@ -1,36 +1,66 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Plataforma inmobiliaria multi-tenant
 
-## Getting Started
+Sitio público y panel de gestión para agentes inmobiliarios en Ecuador. Cada agente (tenant) tiene su dominio, su catálogo de propiedades y un embudo que califica al visitante y le deja agendar una cita. Incluye CRM de prospectos, recordatorios por email y WhatsApp, webhooks de Meta (WhatsApp, Messenger, Instagram y Lead Ads), Conversions API, Google Calendar y un asistente de IA en el chat.
 
-First, run the development server:
+- Arquitectura y decisiones: [`docs/adr/0001-arquitectura.md`](docs/adr/0001-arquitectura.md).
+- Reglas para quien contribuye (personas o agentes): [`AGENTS.md`](AGENTS.md).
+- Sistema visual: [`docs/design.md`](docs/design.md).
+
+**Stack:** Next.js 16 (App Router), TypeScript estricto, Tailwind v4, Drizzle ORM, Postgres (Supabase en producción, PGlite embebido en dev y tests), Better Auth y jobs en Postgres.
+
+## Requisitos
+
+- Node.js 24 (ver `engines` en `package.json`).
+- Nada más para desarrollar: sin `DATABASE_URL` se usa PGlite en `.data/pglite`, sin Docker ni red.
+
+## Puesta en marcha
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env.local   # completa lo que tengas; lo vacío queda "no conectado"
+npm run db:migrate           # aplica drizzle/*.sql (en PGlite también se aplica al arrancar)
+npm run db:seed              # tenant DEFAULT_TENANT_SLUG, dominios localhost y cuenta del agente
+npm run dev                  # http://localhost:3000 (sitio) y /panel/ingresar (panel)
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+- Si no defines `SEED_OWNER_PASSWORD`, el seed genera una contraseña temporal y la muestra una sola vez en la terminal.
+- El seed es idempotente. Si existe `WHATSAPP_PHONE_NUMBER_ID`, lo registra como cuenta de WhatsApp del tenant (`channel_accounts`).
+- `ENCRYPTION_KEY` y `BETTER_AUTH_SECRET` se generan con `openssl rand -base64 32`.
+- Los PDFs de propiedades se importan desde el panel (Propiedades → Importar). El script `npm run import:pdfs` apunta a `scripts/import-pdfs.ts`, que todavía no está en el repositorio.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Calidad
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run typecheck   # next typegen + tsc
+npm run lint
+npm test            # Vitest: servicios, RLS, integraciones con fetch simulado (sin llamadas reales)
+npm run check       # los tres anteriores
+```
 
-## Learn More
+Pruebas end-to-end con Playwright (escritorio y móvil):
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+npx playwright install chromium   # la primera vez
+npm run test:e2e                  # levanta su propio servidor con .data/pglite-e2e y datos de prueba
+E2E_PORT=3403 npx playwright test e2e/funnel.spec.ts   # un archivo, en otro puerto
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Despliegue
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Vercel + Supabase: paso a paso en [`docs/deploy.md`](docs/deploy.md).
 
-## Deploy on Vercel
+## Integraciones
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+Email (Resend), WhatsApp Cloud API, webhooks de Meta, Conversions API, Google Calendar y el asistente IA: cómo obtener cada credencial y qué hace el sistema sin ella en [`docs/integrations.md`](docs/integrations.md). Nunca se simula una conexión: sin credenciales, el panel muestra "No conectado" y los jobs quedan en `blocked`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Estructura
+
+```
+src/app/(public)     sitio público por tenant (catálogo, propiedad, contacto, agenda, privacidad)
+src/app/panel        panel de gestión
+src/app/api          webhooks, cron de jobs, chat, opt-out, OAuth de Google
+src/modules/*        dominio y servicios (properties, crm, funnels, integrations, jobs, …)
+src/server           base de datos, tenant por Host, sesión y rate limit
+drizzle/             migraciones SQL (generadas con npm run db:generate)
+e2e/                 pruebas Playwright
+```
