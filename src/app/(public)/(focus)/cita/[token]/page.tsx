@@ -31,19 +31,19 @@ export default async function BookingPage({ params }: PageProps<"/cita/[token]">
   const minutes = Math.round((booking.endsAt.getTime() - booking.startsAt.getTime()) / 60_000);
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-5 pt-8 pb-16 sm:px-8 sm:pt-12">
-      <p className="text-eyebrow font-medium text-clay uppercase">Tu cita con {site.name}</p>
-      <h1 className="mt-2 font-display text-display-lg text-balance text-ink">{formatAppointment(booking.startsAt, site.timezone)}</h1>
+    <div className="mx-auto w-full max-w-2xl px-5 pt-10 pb-20 sm:px-8 sm:pt-16">
+      <p className="text-eyebrow text-clay">Tu cita con {site.name}</p>
+      <h1 className="mt-3 font-display text-display-lg text-balance text-ink first-letter:uppercase">{formatAppointment(booking.startsAt, site.timezone)}</h1>
 
-      <dl className="mt-8 border-t border-line">
+      <dl className="mt-8 divide-y divide-line rounded-md bg-sand px-5">
         {[
           ["Estado", STATUS_TEXT[booking.status]],
           ["Duración", `${minutes} minutos`],
           ["Modalidad", MEETING_LABEL[booking.meetingKind]],
         ].map(([k, v]) => (
-          <div key={k} className="flex justify-between gap-6 border-b border-line py-3">
-            <dt className="text-sm text-ink-muted">{k}</dt>
-            <dd className="text-base text-ink">{v}</dd>
+          <div key={k} className="flex justify-between gap-6 py-4">
+            <dt className="text-[0.9375rem] text-ink-muted">{k}</dt>
+            <dd className="text-[1.0625rem] font-medium text-ink">{v}</dd>
           </div>
         ))}
       </dl>
@@ -53,7 +53,7 @@ export default async function BookingPage({ params }: PageProps<"/cita/[token]">
           <a
             href={`/cita/${token}/ics`}
             download="cita.ics"
-            className="inline-flex min-h-12 items-center justify-center self-start rounded-full bg-navy px-6 text-base font-medium text-white transition-colors hover:bg-navy-hover"
+            className="inline-flex min-h-12 items-center justify-center self-start rounded-full bg-navy px-7 text-[1.0625rem] font-medium text-white transition-colors duration-300 ease-apple hover:bg-navy-hover"
           >
             Añadir a mi calendario
           </a>

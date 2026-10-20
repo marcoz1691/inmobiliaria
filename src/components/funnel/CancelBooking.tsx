@@ -33,10 +33,10 @@ export function CancelBooking({ token, action }: Props) {
   }
 
   return (
-    <form action={formAction} className="border-t-2 border-sold pt-5">
+    <form action={formAction} className="rounded-lg bg-sold-bg p-6">
       <input type="hidden" name="token" value={token} />
       <p className="text-base font-medium text-ink">¿Seguro que quieres cancelar esta cita?</p>
-      <p className="mt-1 text-sm text-ink-muted">El horario quedará libre para otra persona.</p>
+      <p className="mt-1 text-sm text-ink">El horario quedará libre para otra persona.</p>
       {state.status === "error" ? (
         <p role="alert" className="mt-3 text-sm font-medium text-sold">
           {state.message}
