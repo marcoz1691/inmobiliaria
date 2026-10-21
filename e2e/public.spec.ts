@@ -1,4 +1,5 @@
 import { expect as baseExpect, test } from "@playwright/test";
+import { waitForFormMinAge } from "./helpers";
 
 // `next dev` compiles each route on first hit; under load that can exceed the 5 s default.
 const expect = baseExpect.configure({ timeout: 15_000 });
@@ -36,7 +37,7 @@ test("visitor filters the catalog, opens a listing and sends an inquiry", async 
   await form.getByLabel("Correo").fill("visitante@example.com");
   await form.getByLabel(/Acepto que mis datos/).check();
   // Real people take a few seconds; the form rejects instant (bot-like) submissions.
-  await page.waitForTimeout(3200);
+  await waitForFormMinAge(form);
   await form.getByRole("button", { name: "Enviar consulta" }).click();
   await expect(form.getByText("Mensaje enviado")).toBeVisible();
 });
@@ -44,7 +45,7 @@ test("visitor filters the catalog, opens a listing and sends an inquiry", async 
 test("inquiry shows field errors without consent", async ({ page }) => {
   await page.goto("/contacto");
   await page.getByLabel("Nombre").fill("A");
-  await page.waitForTimeout(3200);
+  await waitForFormMinAge(page.locator("form").filter({ has: page.locator('input[name="form_token"]') }));
   await page.getByRole("button", { name: "Enviar mensaje" }).click();
   await expect(page.getByRole("alert").first()).toContainText("Revisa los campos");
   await expect(page.getByLabel("Nombre")).toHaveAttribute("aria-invalid", "true");

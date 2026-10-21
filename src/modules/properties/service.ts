@@ -87,6 +87,10 @@ export async function updateDraft(m: MemberContext, id: string, input: unknown):
   const patch = parsed.data;
   return run(m.tenantId, async (tx) => {
     const current = await loadEditable(tx, m, id);
+    // An appraisal only comes from a PDF import; the panel can confirm a real price, never set one.
+    if (patch.priceKind === "appraisal" && current.priceKind !== "appraisal") {
+      throw new AppError("invalid", "El avalúo no se puede usar como precio. Ingresa el precio de venta o alquiler.");
+    }
     const values: Partial<typeof properties.$inferInsert> = { ...patch };
     // Keep the URL stable once published; drafts follow the title.
     if (patch.title !== undefined && current.status === "draft" && patch.title.trim()) {
@@ -317,7 +321,8 @@ export function toPublic(p: PropertyRow, media: MediaRow[]): PublicListing {
     map = p.locationPrivacy === "exact" ? { lat, lng, radiusMeters: null } : approximateLocation(lat, lng);
   }
   const images = media.map((mm, i) => toPublicImage(mm, p.title, i));
-  return { ...rest, address: p.locationPrivacy === "exact" ? address : null, map, cover: images[0] ?? null, images };
+  const price = p.priceKind === "appraisal" ? null : p.price;
+  return { ...rest, price, address: p.locationPrivacy === "exact" ? address : null, map, cover: images[0] ?? null, images };
 }
 
 function catalogWhere(tenantId: string, f: CatalogFilters): SQL {

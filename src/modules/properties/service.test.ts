@@ -59,8 +59,10 @@ describe("properties service", () => {
   });
 
   it("does not let an appraisal price be published", async () => {
-    const p = await svc.createDraft(mA, "Terreno del banco");
-    await svc.updateDraft(mA, p.id, { operation: "sale", propertyType: "land", city: "Loja", price: 50000, priceKind: "appraisal" });
+    // Appraisals only enter through an import; the panel cannot set one.
+    const values = { operation: "sale", propertyType: "land", city: "Loja", price: 50000, priceKind: "appraisal" } as const;
+    const p = await svc.createImportedDraft(mA, { title: "Terreno del banco", values, fieldConfidence: {}, reviewNotes: null, sourceImportId: crypto.randomUUID() });
+    await svc.markReviewed(mA, p.id);
     await svc.addPhoto(mA, p.id, await jpeg());
     await expect(svc.changeStatus(mA, p.id, "published")).rejects.toMatchObject({ code: "invalid" });
     await svc.updateDraft(mA, p.id, { price: 55000 });

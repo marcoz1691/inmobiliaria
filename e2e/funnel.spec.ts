@@ -1,4 +1,5 @@
 import { expect as baseExpect, test, type Page } from "@playwright/test";
+import { waitForFormMinAge } from "./helpers";
 
 // `next dev` compiles each route on first hit; under load that can exceed the 5 s default.
 const expect = baseExpect.configure({ timeout: 15_000 });
@@ -14,19 +15,21 @@ async function answer(page: Page, option: string) {
   await expect(page.getByText(/^Paso \d+ de \d+$/)).not.toHaveText(step!);
 }
 
-async function fillContact(page: Page, email: string) {
+/** `openedAt`: taken once the funnel page loaded, i.e. after the server signed its form token. */
+async function fillContact(page: Page, email: string, openedAt: number) {
   await expect(page.getByRole("heading", { name: "¿A quién le confirmamos la cita?" })).toBeVisible();
   await page.getByLabel("Nombre").fill("Prospecto Prueba");
   await page.getByLabel("Correo").fill(email);
   await page.getByLabel("Teléfono o WhatsApp").fill("0991234567");
   await page.getByLabel(/Acepto que mis datos/).check();
   // Minimum fill time guard (bots submit instantly).
-  await page.waitForTimeout(3200);
+  await waitForFormMinAge(openedAt);
   await page.getByRole("button", { name: "Ver horarios disponibles" }).click();
 }
 
 test("qualified lead from a Meta ad books the first available slot", async ({ page }, info) => {
   await page.goto("/agenda/comprador?utm_source=facebook&utm_campaign=e2e&fbclid=test");
+  const openedAt = Date.now();
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
   await expect(page.getByText("Paso 1 de 6")).toBeVisible();
 
@@ -45,7 +48,7 @@ test("qualified lead from a Meta ad books the first available slot", async ({ pa
   await answer(page, "Este mes");
   await page.getByLabel("¿En qué ciudad o sector?").fill("Cumbayá");
   await page.getByRole("button", { name: "Siguiente" }).click();
-  await fillContact(page, `comprador-${info.project.name}@example.com`);
+  await fillContact(page, `comprador-${info.project.name}@example.com`, openedAt);
 
   await expect(page.getByRole("heading", { name: "Elige un horario para tu cita" })).toBeVisible({ timeout: 20_000 });
   const firstSlot = page.locator('input[type="radio"]').first();
@@ -74,12 +77,13 @@ test("qualified lead from a Meta ad books the first available slot", async ({ pa
 
 test("unqualified lead never sees the calendar", async ({ page }, info) => {
   await page.goto("/agenda/comprador?utm_source=facebook&fbclid=test");
+  const openedAt = Date.now();
   await answer(page, "Comprar para invertir");
   await answer(page, "Menos de US$60.000");
   await answer(page, "Aún no lo sé");
   await answer(page, "Solo estoy explorando");
   await page.getByRole("button", { name: "Siguiente" }).click();
-  await fillContact(page, `explorando-${info.project.name}@example.com`);
+  await fillContact(page, `explorando-${info.project.name}@example.com`, openedAt);
 
   await expect(page.getByRole("heading", { name: "Por ahora no es el mejor momento para una cita" })).toBeVisible();
   await expect(page.getByText("te enviamos opciones por correo", { exact: false })).toBeVisible();
