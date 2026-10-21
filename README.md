@@ -26,7 +26,7 @@ npm run dev                  # http://localhost:3000 (sitio) y /panel/ingresar (
 - Si no defines `SEED_OWNER_PASSWORD`, el seed genera una contraseña temporal y la muestra una sola vez en la terminal.
 - El seed es idempotente. Si existe `WHATSAPP_PHONE_NUMBER_ID`, lo registra como cuenta de WhatsApp del tenant (`channel_accounts`).
 - `ENCRYPTION_KEY` y `BETTER_AUTH_SECRET` se generan con `openssl rand -base64 32`.
-- Los PDFs de propiedades se importan desde el panel (Propiedades → Importar). El script `npm run import:pdfs` apunta a `scripts/import-pdfs.ts`, que todavía no está en el repositorio.
+- Los PDFs de propiedades se importan desde el panel (Propiedades → Importar) o, para el tenant piloto, con `npm run import:pdfs` (`assets-input/pdfs`, o `IMPORT_PDF_DIR`). No inventa fichas: cada PDF pasa por el mismo `importPdf` que el panel.
 
 ## Calidad
 

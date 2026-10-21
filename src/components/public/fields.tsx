@@ -1,4 +1,5 @@
 import type { InputHTMLAttributes, TextareaHTMLAttributes } from "react";
+import Link from "next/link";
 import { cn } from "@/components/ui/cn";
 
 export const inputClass =
@@ -79,9 +80,12 @@ export function ConsentCheckbox({ id, text, error, name = "consent", ...input }:
           className="mt-0.5 size-6 shrink-0 rounded-xs accent-navy"
           {...input}
         />
-        <label htmlFor={id} className="text-sm leading-relaxed text-ink-muted">
-          {text}
-        </label>
+        <div className="text-sm leading-relaxed text-ink-muted">
+          <label htmlFor={id}>{text}</label>{" "}
+          <Link href="/privacidad" className="text-link underline-offset-4 hover:underline">
+            Política de privacidad
+          </Link>
+        </div>
       </div>
       {error ? (
         <p id={`${id}-error`} className="mt-1 text-sm font-medium text-sold">

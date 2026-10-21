@@ -1,5 +1,5 @@
 import "server-only";
-import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { withTenant, type Tx } from "@/server/db/tenant-tx";
 import { properties, propertyMedia } from "@/server/db/schema";
@@ -16,9 +16,11 @@ import {
   PUBLIC_STATUSES,
   propertyDraftSchema,
   publishProblems,
+  ilikeContains,
   slugify,
   type CatalogFilters,
   type PropertyStatus,
+  type PublishCheckInput,
 } from "./domain";
 
 export type PropertyRow = typeof properties.$inferSelect;
@@ -66,6 +68,36 @@ async function mediaFor(tx: Tx, tenantId: string, propertyId: string): Promise<M
 
 const run = async <T>(tenantId: string, fn: (tx: Tx) => Promise<T>) => withTenant(await getDb(), tenantId, fn);
 
+const LIVE_STATUSES = new Set<PropertyStatus>(["published", "reserved"]);
+
+function publishCheck(p: PropertyRow, photoCount: number): PublishCheckInput {
+  return {
+    title: p.title,
+    operation: p.operation,
+    propertyType: p.propertyType,
+    city: p.city,
+    price: p.price,
+    priceKind: p.priceKind,
+    needsReview: p.needsReview,
+    photoCount,
+  };
+}
+
+/** Published/reserved listings must stay complete; reject instead of silently dropping required data. */
+function assertLiveStillPublishable(current: PropertyRow, next: PublishCheckInput) {
+  if (!LIVE_STATUSES.has(current.status)) return;
+  const problems = publishProblems(next);
+  if (problems.length) {
+    throw new AppError("invalid", "No se guardó el cambio: la propiedad publicada o reservada quedaría incompleta.", {
+      problems,
+    });
+  }
+}
+
+function containsIlike(column: SQLWrapper, q: string) {
+  return sql`${column} ilike ${ilikeContains(q)} escape '\\'`;
+}
+
 /* ───────────── panel ───────────── */
 
 export async function createDraft(m: MemberContext, title = ""): Promise<PropertyRow> {
@@ -100,6 +132,8 @@ export async function updateDraft(m: MemberContext, id: string, input: unknown):
       // Editing an imported appraisal price means the agent is setting the real asking price.
       values.priceKind = current.operation === "rent" ? "rent" : "sale";
     }
+    const next = { ...current, ...values };
+    assertLiveStillPublishable(current, publishCheck(next, (await mediaFor(tx, m.tenantId, id)).length));
     const [row] = await tx
       .update(properties)
       .set(values)
@@ -130,7 +164,7 @@ export async function listForPanel(m: MemberContext, opts: { status?: PropertySt
     if (opts.status === "active") where.push(inArray(properties.status, ["published", "reserved", "paused"]));
     else if (opts.status) where.push(eq(properties.status, opts.status));
     else where.push(ne(properties.status, "archived"));
-    if (opts.q) where.push(or(ilike(properties.title, `%${opts.q}%`), ilike(properties.city, `%${opts.q}%`)));
+    if (opts.q) where.push(or(containsIlike(properties.title, opts.q), containsIlike(properties.city, opts.q)));
     if (m.role === "agent") where.push(or(eq(properties.createdBy, m.userId), m.agentId ? eq(properties.agentId, m.agentId) : undefined));
     const rows = await tx
       .select({
@@ -285,7 +319,10 @@ export async function setCover(m: MemberContext, propertyId: string, mediaId: st
 
 export async function removePhoto(m: MemberContext, propertyId: string, mediaId: string): Promise<void> {
   const keys = await run(m.tenantId, async (tx) => {
-    await loadEditable(tx, m, propertyId);
+    const current = await loadEditable(tx, m, propertyId);
+    const existing = await mediaFor(tx, m.tenantId, propertyId);
+    if (!existing.some((x) => x.id === mediaId)) throw notFound("Foto");
+    assertLiveStillPublishable(current, publishCheck(current, existing.length - 1));
     const scope = and(eq(propertyMedia.tenantId, m.tenantId), eq(propertyMedia.propertyId, propertyId));
     const [removed] = await tx.delete(propertyMedia).where(and(scope, eq(propertyMedia.id, mediaId))).returning();
     if (!removed) throw notFound("Foto");
@@ -330,8 +367,14 @@ function catalogWhere(tenantId: string, f: CatalogFilters): SQL {
   if (f.operation) where.push(eq(properties.operation, f.operation));
   if (f.type) where.push(eq(properties.propertyType, f.type));
   if (f.q) {
-    const like = `%${f.q}%`;
-    where.push(or(ilike(properties.title, like), ilike(properties.city, like), ilike(properties.sector, like), ilike(properties.province, like)));
+    where.push(
+      or(
+        containsIlike(properties.title, f.q),
+        containsIlike(properties.city, f.q),
+        containsIlike(properties.sector, f.q),
+        containsIlike(properties.province, f.q),
+      ),
+    );
   }
   if (f.minPrice !== undefined) where.push(gte(properties.price, f.minPrice));
   if (f.maxPrice !== undefined) where.push(lte(properties.price, f.maxPrice));

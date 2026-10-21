@@ -220,7 +220,7 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
                   </h2>
                   <p className="mt-3 mb-6 max-w-prose text-[1.0625rem] text-ink-muted">
                     {l.map.radiusMeters !== null
-                      ? `Zona aproximada${where ? ` en ${where}` : ""}. La dirección exacta se comparte al agendar la visita.`
+                      ? `Zona aproximada${where ? ` en ${where}` : ""}. Te comparto la dirección exacta cuando coordinemos la visita.`
                       : (l.address ?? where)}
                   </p>
                   <PropertyMap point={l.map} label={`Mapa de la ubicación de ${l.title}`} />

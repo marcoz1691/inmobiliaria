@@ -115,6 +115,11 @@ export function publishProblems(p: PublishCheckInput): string[] {
   return problems;
 }
 
+/** Wraps `q` for SQL ILIKE so `%`, `_` and `\` match as literals, not wildcards. */
+export function ilikeContains(q: string): string {
+  return `%${q.replace(/[\\%_]/g, (ch) => `\\${ch}`)}%`;
+}
+
 export function slugify(input: string): string {
   return (
     input
