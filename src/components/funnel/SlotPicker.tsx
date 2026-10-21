@@ -48,12 +48,12 @@ export function SlotPicker({ schedule, pending, error, onConfirm }: Props) {
                     setSlot(null);
                   }}
                   className={cn(
-                    "flex min-h-14 min-w-20 flex-col items-center justify-center rounded-sm border px-3 py-2 text-center transition-colors",
-                    active ? "border-navy bg-navy text-white" : "border-line-strong bg-white text-ink hover:border-ink",
+                    "flex min-h-16 min-w-20 flex-col items-center justify-center rounded-sm border px-3 py-2 text-center transition-colors duration-300 ease-apple",
+                    active ? "border-navy bg-navy text-white" : "border-line-strong bg-white text-ink hover:border-ink/70",
                   )}
                 >
                   <span className="text-xs capitalize">{d.weekday}</span>
-                  <span className="text-sm font-medium whitespace-nowrap">{d.date}</span>
+                  <span className="text-[0.9375rem] font-semibold whitespace-nowrap">{d.date}</span>
                 </button>
               </li>
             );
@@ -71,9 +71,9 @@ export function SlotPicker({ schedule, pending, error, onConfirm }: Props) {
             <li key={s.iso}>
               <label
                 className={cn(
-                  "flex min-h-12 cursor-pointer items-center justify-center rounded-sm border text-base font-medium transition-colors",
+                  "flex min-h-12 cursor-pointer items-center justify-center rounded-full border text-base font-medium transition-colors duration-300 ease-apple",
                   "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-navy",
-                  slot === s.iso ? "border-navy bg-navy text-white" : "border-line-strong bg-white text-ink hover:border-ink",
+                  slot === s.iso ? "border-navy bg-navy text-white" : "border-line-strong bg-white text-ink hover:border-ink/70",
                 )}
               >
                 <input type="radio" name={`${id}-slot`} value={s.iso} checked={slot === s.iso} onChange={() => setSlot(s.iso)} className="sr-only" />
@@ -85,7 +85,7 @@ export function SlotPicker({ schedule, pending, error, onConfirm }: Props) {
       </fieldset>
 
       {error ? (
-        <p role="alert" className="border-t-2 border-sold pt-3 text-sm font-medium text-sold">
+        <p role="alert" className="rounded-sm bg-sold-bg px-4 py-3 text-sm font-medium text-sold">
           {error}
         </p>
       ) : null}

@@ -45,11 +45,11 @@ export default async function FunnelPage({ params }: PageProps<"/agenda/[slug]">
   const pixelId = env.META_PIXEL_ID;
 
   return (
-    <div className="mx-auto w-full max-w-2xl px-5 pt-8 pb-16 sm:px-8 sm:pt-12 lg:pb-24">
+    <div className="mx-auto w-full max-w-2xl px-5 pt-10 pb-20 sm:px-8 sm:pt-16 lg:pb-28">
       {pixelId ? <MetaPixel pixelId={pixelId} /> : null}
-      <header className="mb-8">
+      <header className="mb-10">
         <h1 className="font-display text-display-lg text-balance text-ink">{funnel.headline}</h1>
-        {funnel.subheadline ? <p className="mt-3 text-lg text-pretty text-ink-muted">{funnel.subheadline}</p> : null}
+        {funnel.subheadline ? <p className="mt-4 text-lead text-pretty text-ink-muted">{funnel.subheadline}</p> : null}
       </header>
       <FunnelFlow
         slug={funnel.slug}

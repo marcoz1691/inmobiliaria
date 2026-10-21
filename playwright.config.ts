@@ -20,18 +20,20 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: process.env.CI ? 1 : 0,
-  reporter: [["list"]],
+  reporter: process.env.CI ? [["list"], ["html", { open: "never" }]] : [["list"]],
   timeout: 60_000,
   use: { baseURL: `http://localhost:${PORT}`, trace: "retain-on-failure", locale: "es-EC", timezoneId: "America/Guayaquil" },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    { name: "warmup", testMatch: /warmup\.setup\.ts/, use: { ...devices["Desktop Chrome"] } },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, dependencies: ["warmup"] },
+    { name: "mobile", use: { ...devices["Pixel 7"] }, dependencies: ["warmup"] },
   ],
   webServer: {
     command: `rm -rf .data/pglite-e2e && npx tsx --conditions=react-server scripts/seed.ts && npx next dev -p ${PORT}`,
     url: `http://localhost:${PORT}/panel/ingresar`,
     env: serverEnv,
-    timeout: 180_000,
+    // Seed + first compile of the login page; slow on a busy machine or a cold CI runner.
+    timeout: 360_000,
     reuseExistingServer: false,
   },
 });

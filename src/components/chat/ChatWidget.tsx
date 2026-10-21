@@ -59,7 +59,7 @@ function RichText({ text }: { text: string }) {
           <Fragment key={i}>
             <a
               href={href}
-              className="break-words text-navy underline underline-offset-2"
+              className="break-words text-link underline underline-offset-2"
               {...(sameSite ? {} : { target: "_blank", rel: "noopener noreferrer" })}
             >
               {href}
@@ -90,7 +90,7 @@ function CloseIcon() {
 }
 
 const action =
-  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-sm font-medium transition-colors duration-150 " +
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[0.9375rem] font-medium transition-colors duration-300 ease-apple " +
   "focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-navy";
 
 /**
@@ -197,7 +197,7 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
           Escribir por WhatsApp<span className="sr-only"> (se abre en una pestaña nueva)</span>
         </a>
       )}
-      <a href={contactHref} className={cn(action, "border border-ink/80 text-ink hover:bg-ink hover:text-paper")}>
+      <a href={contactHref} className={cn(action, "border border-navy text-navy hover:bg-navy hover:text-white")}>
         Ir al formulario de contacto
       </a>
     </div>
@@ -212,8 +212,11 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
         aria-haspopup="dialog"
         aria-expanded={open}
         className={cn(
-          action,
-          "fixed right-4 bottom-4 z-40 border border-line-strong bg-paper text-ink hover:bg-sand sm:right-6 sm:bottom-6",
+          "inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 text-[0.9375rem] font-medium",
+          "focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-navy",
+          // Sits above the mobile sticky action bar while one is shown (--sticky-cta-h).
+          "glass fixed right-4 bottom-[calc(1rem+var(--sticky-cta-h))] z-40 border border-ink/10 text-ink shadow-[0_10px_30px_-10px_rgb(0_0_0/0.35)]",
+          "transition-[bottom,background-color] duration-500 ease-apple hover:bg-white sm:right-6 sm:bottom-[calc(1.5rem+var(--sticky-cta-h))]",
           className,
         )}
       >
@@ -233,14 +236,15 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
           if (e.target === dialogRef.current) closePanel();
         }}
         className={cn(
-          "fixed inset-x-0 top-auto bottom-0 m-0 h-[min(88dvh,40rem)] w-full max-w-none rounded-t-md border border-line-strong bg-paper p-0 text-ink",
-          "backdrop:bg-ink/40 sm:inset-x-auto sm:right-6 sm:bottom-6 sm:h-[min(80dvh,38rem)] sm:w-[24rem] sm:rounded-md",
+          "fixed inset-x-0 top-auto bottom-0 m-0 h-[min(88dvh,40rem)] w-full max-w-none overflow-hidden rounded-t-lg bg-paper p-0 text-ink",
+          "shadow-[0_24px_60px_-12px_rgb(0_0_0/0.35)] backdrop:bg-night/30 backdrop:backdrop-blur-sm open:animate-[rise_0.45s_var(--ease-apple)_both]",
+          "sm:inset-x-auto sm:right-6 sm:bottom-6 sm:h-[min(80dvh,38rem)] sm:w-[25rem] sm:rounded-lg",
         )}
       >
         <div className="flex h-full flex-col">
-          <header className="flex items-start justify-between gap-3 border-b border-line px-5 pt-4 pb-3">
+          <header className="flex items-start justify-between gap-3 border-b border-line px-5 pt-5 pb-4">
             <div>
-              <h2 id={titleId} className="font-display text-xl leading-tight">
+              <h2 id={titleId} className="text-headline">
                 Asistente del sitio
               </h2>
               <p id={noticeId} className="mt-1 text-sm text-ink-muted">
@@ -259,7 +263,7 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
 
           <div ref={logRef} role="log" aria-live="polite" aria-busy={pending} className="flex-1 space-y-3 overflow-y-auto px-5 py-4">
             {availability === "unavailable" ? (
-              <div className="space-y-4 border-t-2 border-clay pt-3" role="status">
+              <div className="space-y-4 rounded-md bg-sand p-4" role="status">
                 <p className="text-base">El asistente automático no está disponible en este momento.</p>
                 <p className="text-sm text-ink-muted">Puedes escribirle directamente al agente o dejar tu consulta en el formulario.</p>
                 {alternatives}
@@ -276,7 +280,7 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
                             type="button"
                             onClick={() => void send(s)}
                             disabled={availability !== "available" || pending}
-                            className="min-h-11 rounded-full border border-line-strong px-4 text-left text-sm hover:bg-sand focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-navy disabled:opacity-50"
+                            className="min-h-11 rounded-full bg-sand px-4 text-left text-[0.9375rem] transition-colors duration-300 ease-apple hover:bg-mist focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-navy disabled:opacity-50"
                           >
                             {s}
                           </button>
@@ -289,8 +293,8 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
                   <div key={i} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
                     <p
                       className={cn(
-                        "max-w-[85%] rounded-md px-3.5 py-2.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap",
-                        m.role === "user" ? "bg-navy text-white" : "border border-line bg-white text-ink",
+                        "max-w-[85%] rounded-[1.25rem] px-4 py-2.5 text-[0.9375rem] leading-relaxed whitespace-pre-wrap",
+                        m.role === "user" ? "rounded-br-md bg-navy text-white" : "rounded-bl-md bg-mist text-ink",
                       )}
                     >
                       <span className="sr-only">{m.role === "user" ? "Tú: " : "Asistente: "}</span>
@@ -308,7 +312,7 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
           </div>
 
           {availability !== "unavailable" && (
-            <form onSubmit={onSubmit} className="border-t border-line px-4 pt-3 pb-4" noValidate>
+            <form onSubmit={onSubmit} className="border-t border-line px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]" noValidate>
               {error && (
                 <p id={errorId} role="alert" className="mb-2 text-sm text-sold">
                   {error}
@@ -340,7 +344,7 @@ export function ChatWidget({ whatsappHref, contactHref = "/contacto", className 
                   placeholder="Escribe tu pregunta"
                   aria-describedby={error ? errorId : undefined}
                   disabled={availability === "unknown"}
-                  className="min-h-11 flex-1 resize-none rounded-md border border-line-strong bg-white px-3 py-2.5 text-base placeholder:text-ink-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy"
+                  className="min-h-11 flex-1 resize-none rounded-[1.375rem] border border-line-strong bg-white px-4 py-2.5 text-base placeholder:text-ink-muted focus-visible:border-navy focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-navy"
                 />
                 <button type="submit" disabled={pending || !draft.trim() || availability !== "available"} className={cn(action, "bg-navy text-white hover:bg-navy-hover disabled:opacity-50")}>
                   Enviar

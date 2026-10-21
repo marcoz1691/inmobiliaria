@@ -129,7 +129,7 @@ export function FunnelFlow({ slug, questions, consentText, formToken, honeypotNa
     const hasSlots = phase.schedule.days.length > 0;
     return (
       <section aria-labelledby="paso-titulo">
-        <p className="text-eyebrow font-medium text-clay uppercase">Último paso</p>
+        <p className="text-eyebrow text-clay">Último paso</p>
         <h2 id="paso-titulo" ref={headingRef} tabIndex={-1} className="mt-2 font-display text-display-md text-ink focus:outline-none">
           {hasSlots ? "Elige un horario para tu cita" : "Por ahora no hay horarios libres"}
         </h2>
@@ -154,7 +154,7 @@ export function FunnelFlow({ slug, questions, consentText, formToken, honeypotNa
           Paso {step + 1} de {total}
         </p>
         {step > 0 ? (
-          <button type="button" onClick={back} className="-mr-3 inline-flex min-h-11 items-center gap-1 rounded-full px-3 font-medium text-ink hover:bg-ink/5">
+          <button type="button" onClick={back} className="-mr-3 inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-[0.9375rem] text-link hover:bg-navy/5">
             <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M12.5 4.5 7 10l5.5 5.5" />
             </svg>
@@ -162,13 +162,14 @@ export function FunnelFlow({ slug, questions, consentText, formToken, honeypotNa
           </button>
         ) : null}
       </div>
-      <div role="progressbar" aria-label="Progreso" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-2 h-1 w-full overflow-hidden rounded-full bg-sand">
-        <div className="h-full bg-navy transition-[width] duration-300 ease-out-quart" style={{ width: `${progress}%` }} />
+      <div role="progressbar" aria-label="Progreso" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress} className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-mist">
+        <div className="h-full rounded-full bg-navy transition-[width] duration-500 ease-apple" style={{ width: `${progress}%` }} />
       </div>
 
       {!onContact && question ? (
         <form
-          className="mt-8"
+          key={question.id}
+          className="mt-10 animate-[rise_0.5s_var(--ease-apple)_both]"
           onSubmit={(e) => {
             e.preventDefault();
             next();
@@ -195,14 +196,14 @@ export function FunnelFlow({ slug, questions, consentText, formToken, honeypotNa
           </Button>
         </form>
       ) : (
-        <form className="relative mt-8 flex flex-col gap-5" onSubmit={onSubmitContact} noValidate>
+        <form className="relative mt-10 flex animate-[rise_0.5s_var(--ease-apple)_both] flex-col gap-5" onSubmit={onSubmitContact} noValidate>
           <h2 ref={headingRef} tabIndex={-1} className="font-display text-display-md text-ink focus:outline-none">
             ¿A quién le confirmamos la cita?
           </h2>
           <p className="-mt-2 text-base text-ink-muted">Al enviar verás los horarios disponibles.</p>
           <Honeypot name={honeypotName} />
           {formError ? (
-            <p role="alert" className="border-t-2 border-sold pt-3 text-sm font-medium text-sold">
+            <p role="alert" className="rounded-sm bg-sold-bg px-4 py-3 text-sm font-medium text-sold">
               {formError}
             </p>
           ) : null}

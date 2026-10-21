@@ -1,18 +1,16 @@
 import { OPERATION_LABEL, OPERATIONS, PROPERTY_TYPES, TYPE_LABEL, type CatalogFilters } from "@/modules/properties/domain";
 import { Button } from "@/components/ui/Button";
+import { inputClass as field, selectClass as select } from "./fields";
 
 type Props = { filters: CatalogFilters; idPrefix: string };
 
-const field =
-  "mt-1.5 block min-h-11 w-full rounded-sm border border-line-strong bg-white px-3 text-base text-ink " +
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-navy";
 const labelClass = "block text-sm font-medium text-ink";
 
 /** Catalog filter inputs. Rendered twice (mobile disclosure, desktop sidebar), hence `idPrefix`. */
 export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
   const id = (name: string) => `${idPrefix}-${name}`;
   return (
-    <div className="flex flex-col gap-5">
+    <div className="@container flex flex-col gap-5">
       <div>
         <label htmlFor={id("q")} className={labelClass}>
           Sector o ciudad
@@ -20,12 +18,12 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
         <input id={id("q")} name="q" type="search" defaultValue={f.q ?? ""} maxLength={80} placeholder="Ej.: Cumbayá" className={field} />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 @min-[19rem]:grid-cols-2">
         <div>
           <label htmlFor={id("operation")} className={labelClass}>
             Operación
           </label>
-          <select id={id("operation")} name="operation" defaultValue={f.operation ?? ""} className={field}>
+          <select id={id("operation")} name="operation" defaultValue={f.operation ?? ""} className={select}>
             <option value="">Todas</option>
             {OPERATIONS.map((o) => (
               <option key={o} value={o}>
@@ -38,7 +36,7 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
           <label htmlFor={id("type")} className={labelClass}>
             Tipo
           </label>
-          <select id={id("type")} name="type" defaultValue={f.type ?? ""} className={field}>
+          <select id={id("type")} name="type" defaultValue={f.type ?? ""} className={select}>
             <option value="">Todos</option>
             {PROPERTY_TYPES.map((t) => (
               <option key={t} value={t}>
@@ -67,12 +65,12 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
         </div>
       </fieldset>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 @min-[19rem]:grid-cols-2">
         <div>
           <label htmlFor={id("bedrooms")} className={labelClass}>
             Dormitorios
           </label>
-          <select id={id("bedrooms")} name="bedrooms" defaultValue={f.bedrooms ?? ""} className={field}>
+          <select id={id("bedrooms")} name="bedrooms" defaultValue={f.bedrooms ?? ""} className={select}>
             <option value="">Cualquiera</option>
             {[1, 2, 3, 4, 5].map((n) => (
               <option key={n} value={n}>
@@ -85,7 +83,7 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
           <label htmlFor={id("bathrooms")} className={labelClass}>
             Baños
           </label>
-          <select id={id("bathrooms")} name="bathrooms" defaultValue={f.bathrooms ?? ""} className={field}>
+          <select id={id("bathrooms")} name="bathrooms" defaultValue={f.bathrooms ?? ""} className={select}>
             <option value="">Cualquiera</option>
             {[1, 2, 3, 4].map((n) => (
               <option key={n} value={n}>
@@ -107,7 +105,7 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
         <label htmlFor={id("sort")} className={labelClass}>
           Ordenar por
         </label>
-        <select id={id("sort")} name="sort" defaultValue={f.sort ?? ""} className={field}>
+        <select id={id("sort")} name="sort" defaultValue={f.sort ?? ""} className={select}>
           <option value="">Más recientes</option>
           <option value="price_asc">Precio: menor a mayor</option>
           <option value="price_desc">Precio: mayor a menor</option>

@@ -17,7 +17,7 @@
    DATABASE_URL=… SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… \
    SEED_OWNER_EMAIL=correo@del-agente SEED_OWNER_PASSWORD='<temporal fuerte>' npm run db:seed
    ```
-   El seed sube la foto desde `assets-input/perfil/foto-agente.jpeg` si existe.
+   El seed sube la foto desde `assets-input/perfil/foto-agente.jpeg` si existe. Si pasas también `WHATSAPP_PHONE_NUMBER_ID`, registra ese número como cuenta de WhatsApp del tenant (`channel_accounts`), que es lo que usa el webhook para enrutar los mensajes.
 7. Agrega el dominio del agente a `tenant_domains` (o desde el panel cuando exista esa pantalla):
    ```sql
    insert into tenant_domains (domain, tenant_id) select 'tudominio.com', id from tenants where slug = 'piloto';
@@ -36,12 +36,15 @@
 ## 3. Integraciones
 Ver `docs/integrations.md`. Cada canal se activa al definir sus variables. Mientras falten, el panel lo muestra como "No conectado" y los jobs quedan en espera (`blocked`) para enviarse al conectar.
 
+- **Varios tenants en el mismo despliegue:** registra en `channel_accounts` cada número de WhatsApp, página e Instagram de cada tenant. En producción, con más de un tenant, los webhooks de una cuenta no registrada se ignoran (estado `ignored` en `webhook_events`).
+
 ## 4. Verificación posterior al despliegue
 - `/panel/ingresar` → iniciar sesión y cambiar la contraseña temporal.
 - Publicar una propiedad de prueba y abrirla en el sitio.
 - Enviar el formulario de contacto: debe aparecer en **Prospectos**.
 - Configurar el horario en **Agenda**, activar el embudo y probar `/agenda/<slug>` desde el teléfono.
-- Revisar en Vercel → Logs que el cron responde `200` con `{claimed, done, blocked, failed}`.
+- Revisar en Vercel → Logs que el cron responde `200` con `{claimed, done, blocked, failed, purged}`.
+- Abrir `/privacidad`: completar con un abogado los campos "Pendiente de completar" (razón social, RUC o cédula, domicilio, plazo de conservación) y revisar el texto antes de publicar anuncios.
 
 ## Rollback
 - **Código:** "Promote" del deployment anterior en Vercel.

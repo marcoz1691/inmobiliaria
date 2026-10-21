@@ -17,19 +17,26 @@ export function FunnelOutcome({ phase, headingRef, contact }: Props) {
   if (phase.kind === "booked") {
     const b = phase.booking;
     return (
-      <section role="status" aria-labelledby="resultado" className="border-t-2 border-available pt-6">
-        <p className="text-eyebrow font-medium text-available uppercase">Cita confirmada</p>
-        <h2 id="resultado" ref={headingRef} tabIndex={-1} className={`mt-2 ${headingClass}`}>
+      <section role="status" aria-labelledby="resultado" className="animate-rise rounded-lg bg-sand p-6 sm:p-10">
+        <p className="inline-flex items-center gap-2 text-eyebrow text-available">
+          <span aria-hidden="true" className="inline-flex size-7 items-center justify-center rounded-full bg-available text-white">
+            <svg viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m5 10.5 3.2 3.2L15 7" />
+            </svg>
+          </span>
+          Cita confirmada
+        </p>
+        <h2 id="resultado" ref={headingRef} tabIndex={-1} className={`mt-4 ${headingClass}`}>
           Te espero el <span className="whitespace-nowrap">{b.when}</span>
         </h2>
-        <dl className="mt-6 border-t border-line">
-          <div className="flex justify-between gap-6 border-b border-line py-3">
-            <dt className="text-sm text-ink-muted">Duración</dt>
-            <dd className="text-base text-ink">{b.durationMinutes} minutos</dd>
+        <dl className="mt-6 divide-y divide-line rounded-md bg-white px-5">
+          <div className="flex justify-between gap-6 py-4">
+            <dt className="text-[0.9375rem] text-ink-muted">Duración</dt>
+            <dd className="text-[1.0625rem] font-medium text-ink">{b.durationMinutes} minutos</dd>
           </div>
-          <div className="flex justify-between gap-6 border-b border-line py-3">
-            <dt className="text-sm text-ink-muted">Modalidad</dt>
-            <dd className="text-base text-ink">{b.meetingLabel}</dd>
+          <div className="flex justify-between gap-6 py-4">
+            <dt className="text-[0.9375rem] text-ink-muted">Modalidad</dt>
+            <dd className="text-[1.0625rem] font-medium text-ink">{b.meetingLabel}</dd>
           </div>
         </dl>
         <p className="mt-6 max-w-prose text-base text-ink-muted">
@@ -40,7 +47,7 @@ export function FunnelOutcome({ phase, headingRef, contact }: Props) {
           <a
             href={b.icsUrl}
             download="cita.ics"
-            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-navy px-6 text-base font-medium whitespace-nowrap text-white transition-colors hover:bg-navy-hover"
+            className="inline-flex min-h-12 items-center justify-center gap-2 rounded-full bg-navy px-7 text-[1.0625rem] font-medium whitespace-nowrap text-white transition-colors duration-300 ease-apple hover:bg-navy-hover"
           >
             Añadir a mi calendario
           </a>
@@ -75,11 +82,11 @@ export function FunnelOutcome({ phase, headingRef, contact }: Props) {
   }
 
   return (
-    <section role="status" aria-labelledby="resultado" className="border-t-2 border-line-strong pt-6">
+    <section role="status" aria-labelledby="resultado" className="animate-rise rounded-lg bg-sand p-6 sm:p-10">
       <h2 id="resultado" ref={headingRef} tabIndex={-1} className={headingClass}>
         Por ahora no es el mejor momento para una cita
       </h2>
-      <p className="mt-4 max-w-prose text-lg text-pretty text-ink-muted">
+      <p className="mt-4 max-w-prose text-lead text-pretty text-ink-muted">
         Gracias por tus respuestas. Te enviamos opciones por correo para que las revises con calma, y cuando estés listo podemos
         agendar.
       </p>

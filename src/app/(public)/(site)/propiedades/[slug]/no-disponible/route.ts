@@ -29,33 +29,36 @@ export async function GET(_req: Request, { params }: RouteContext<"/propiedades/
 <style>
 :root{color-scheme:light}
 *{box-sizing:border-box}
-body{margin:0;background:#f7f5f0;color:#15171a;font:16px/1.6 ui-sans-serif,system-ui,sans-serif}
-header,main{max-width:48rem;margin:0 auto;padding:0 20px}
-header{padding-top:20px;padding-bottom:20px;border-bottom:1px solid #ddd7cc}
-header a{font:400 1.25rem/1 Georgia,ui-serif,serif;color:#15171a;text-decoration:none;display:inline-flex;min-height:44px;align-items:center}
-main{padding-top:48px;padding-bottom:64px}
-.eyebrow{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#9a4527;font-weight:500;margin:0}
-h1{font:400 clamp(2rem,1.4rem + 2.4vw,3.25rem)/1.08 Georgia,ui-serif,serif;letter-spacing:-.015em;margin:12px 0 16px}
-p{color:#585c63;max-width:36rem}
-.btn{display:inline-flex;align-items:center;min-height:48px;padding:0 24px;border-radius:999px;background:#1b2a41;color:#fff;text-decoration:none;font-weight:500;margin-top:16px}
-.btn:hover{background:#2a3d5c}
-h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:#9a4527;font-weight:500;margin:56px 0 0}
-ul{list-style:none;padding:0;margin:12px 0 0;border-top:1px solid #ddd7cc}
-li{border-bottom:1px solid #ddd7cc;padding:12px 0;display:flex;flex-direction:column}
-li a{font:400 1.25rem/1.3 Georgia,ui-serif,serif;color:#15171a;min-height:44px;display:inline-flex;align-items:center}
-li span{font-size:14px;color:#585c63}
-a:focus-visible{outline:2px solid #1b2a41;outline-offset:3px}
+body{margin:0;background:#fff;color:#1d1d1f;font:17px/1.47 -apple-system,BlinkMacSystemFont,"SF Pro Text",Inter,"Helvetica Neue",Arial,sans-serif;letter-spacing:-.011em;-webkit-font-smoothing:antialiased}
+header{position:sticky;top:0;background:rgba(255,255,255,.8);-webkit-backdrop-filter:saturate(180%) blur(20px);backdrop-filter:saturate(180%) blur(20px);border-bottom:1px solid rgba(29,29,31,.1)}
+header div,main{max-width:48rem;margin:0 auto;padding:0 20px}
+header a{font-weight:600;font-size:17px;letter-spacing:-.02em;color:#1d1d1f;text-decoration:none;display:inline-flex;min-height:52px;align-items:center}
+main{padding-top:64px;padding-bottom:80px}
+.eyebrow{font-size:15px;font-weight:600;color:#b64400;margin:0}
+h1{font:700 clamp(2.25rem,1.5rem + 3vw,4rem)/1.05 -apple-system,BlinkMacSystemFont,"SF Pro Display",Inter,"Helvetica Neue",Arial,sans-serif;letter-spacing:-.028em;margin:12px 0 16px;text-wrap:balance}
+p{color:#6e6e73;max-width:36rem;font-size:clamp(1.1875rem,1rem + .6vw,1.5rem);line-height:1.42}
+.btn{display:inline-flex;align-items:center;min-height:48px;padding:0 28px;border-radius:999px;background:#0071e3;color:#fff;text-decoration:none;font-weight:500;margin-top:16px}
+.btn:hover{background:#0062c4}
+h2{font-size:24px;font-weight:600;letter-spacing:-.016em;margin:64px 0 0}
+ul{list-style:none;padding:0;margin:16px 0 0;display:grid;gap:12px}
+li{background:#f5f5f7;border-radius:22px;padding:16px 24px;display:flex;flex-direction:column}
+li a{font-size:20px;font-weight:600;letter-spacing:-.016em;color:#1d1d1f;min-height:44px;display:inline-flex;align-items:center;text-decoration:none}
+li a:hover{text-decoration:underline}
+li span{font-size:15px;color:#6e6e73}
+.more{color:#0066cc;text-decoration:none;display:inline-flex;min-height:44px;align-items:center}
+.more:hover{text-decoration:underline}
+a:focus-visible{outline:2px solid #0071e3;outline-offset:3px;border-radius:8px}
 </style>
 </head>
 <body>
-<header><a href="/">${esc(site.name)}</a></header>
+<header><div><a href="/">${esc(site.name)}</a></div></header>
 <main id="contenido">
 <p class="eyebrow">Propiedad retirada</p>
 <h1>Esta propiedad ya no está disponible</h1>
 <p>El anuncio fue retirado. Revisa otras opciones publicadas o cuéntame qué buscas y te ayudo a encontrar algo parecido.</p>
 <a class="btn" href="/propiedades">Ver propiedades disponibles</a>
 ${items ? `<h2>Te pueden interesar</h2><ul>${items}</ul>` : ""}
-<p style="margin-top:40px"><a href="${esc(site.bookingHref)}" style="color:#15171a">${site.funnelHref ? "Agenda una cita" : "Escríbeme"}</a></p>
+<p style="margin-top:40px"><a class="more" href="${esc(site.bookingHref)}">${site.funnelHref ? "Agenda una cita" : "Escríbeme"} ›</a></p>
 </main>
 </body>
 </html>`;
