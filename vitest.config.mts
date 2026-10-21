@@ -9,7 +9,8 @@ export default defineConfig({
     environment: "node",
     include: ["src/**/*.test.ts", "test/**/*.test.ts"],
     testTimeout: 30_000,
-    hookTimeout: 60_000,
+    // Each file migrates its own PGlite; on a loaded machine that alone can exceed a minute.
+    hookTimeout: 180_000,
     coverage: {
       provider: "v8",
       include: ["src/modules/**/*.ts", "src/server/**/*.ts"],
