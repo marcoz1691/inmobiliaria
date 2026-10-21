@@ -4,6 +4,7 @@ import { member, seedTenant, useTestDb } from "../../../test/db";
 import { makePdf } from "../../../test/pdf";
 import type { Db } from "@/server/db/create";
 import { imports, properties, user } from "@/server/db/schema";
+import { getPrivateStorage, getStorage } from "@/modules/media/storage";
 import * as props from "@/modules/properties/service";
 import { getImport, importPdf, listImports, MAX_PDF_BYTES, NEEDS_OCR_MESSAGE, readImportPdf } from "./service";
 
@@ -112,6 +113,33 @@ describe("imports service: isolation and validation", () => {
     const r = await importPdf(mA, '..\\..//evil"\r\nX-Injected: 1.pdf', makePdf(["CASA UNO\n", "otra página"]));
     const [row] = await db.select().from(imports).where(eq(imports.id, r.importId));
     expect(row!.fileName).not.toMatch(/[\\/\r\n]/);
-    expect(row!.storageKey).toBe(`tenants/${mA.tenantId}/imports/${row!.fileSha256}.pdf`);
+  });
+
+  it("stores the source PDF privately under a random key, not its SHA-256", async () => {
+    const [row] = await db.select().from(imports).where(eq(imports.id, importId));
+    const key = row!.storageKey!;
+    expect(key).toMatch(new RegExp(`^tenants/${mA.tenantId}/imports/[0-9a-f-]{36}\\.pdf$`));
+    expect(key).not.toContain(row!.fileSha256);
+    expect((await getPrivateStorage().get(key))?.subarray(0, 5).toString()).toBe("%PDF-");
+    expect(await getStorage().get(key)).toBeNull();
+  });
+
+  it("moves a legacy PDF (public storage, SHA key) to private storage on first read", async () => {
+    const r = await importPdf(mA, "antiguo.pdf", makePdf(["CASA ANTIGUA - QUITO", "otra página"]));
+    const [row] = await db.select().from(imports).where(eq(imports.id, r.importId));
+    const legacyKey = `tenants/${mA.tenantId}/imports/${row!.fileSha256}.pdf`;
+    await getStorage().put(legacyKey, (await getPrivateStorage().get(row!.storageKey!))!, "application/pdf");
+    await getPrivateStorage().remove([row!.storageKey!]);
+    await db.update(imports).set({ storageKey: legacyKey }).where(eq(imports.id, r.importId));
+
+    await expect(readImportPdf(mB, r.importId)).rejects.toMatchObject({ code: "not_found" });
+    expect(await getStorage().get(legacyKey)).not.toBeNull();
+
+    expect((await readImportPdf(mA, r.importId)).body.subarray(0, 5).toString()).toBe("%PDF-");
+    const [moved] = await db.select().from(imports).where(eq(imports.id, r.importId));
+    expect(moved!.storageKey).not.toBe(legacyKey);
+    expect(moved!.storageKey).not.toContain(row!.fileSha256);
+    expect(await getStorage().get(legacyKey)).toBeNull();
+    expect((await readImportPdf(mA, r.importId)).body.subarray(0, 5).toString()).toBe("%PDF-");
   });
 });
