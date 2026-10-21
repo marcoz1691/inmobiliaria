@@ -37,8 +37,7 @@ describe("published listing completeness and search literals", () => {
     expect(media).toHaveLength(0);
   });
 
-  // QA-04: r4/product should reject these; today updateDraft/removePhoto do not re-check publishProblems.
-  it.fails("rejects clearing the price of a published listing (QA-04)", async () => {
+  it("rejects clearing the price of a published listing (QA-04)", async () => {
     const p = await published("Publicada sin borrar el precio");
     await expect(svc.updateDraft(m, p.id, { price: null })).rejects.toMatchObject({ code: "invalid" });
     const view = await svc.getPublicProperty(tenantId, p.slug);
@@ -46,7 +45,7 @@ describe("published listing completeness and search literals", () => {
     if (view.kind === "ok") expect(view.listing.price).toBe(120000);
   });
 
-  it.fails("rejects removing the last photo of a published listing (QA-04)", async () => {
+  it("rejects removing the last photo of a published listing (QA-04)", async () => {
     const p = await published("Publicada sin quedarse sin fotos");
     const { media } = await svc.getForEdit(m, p.id);
     expect(media).toHaveLength(1);
@@ -56,8 +55,7 @@ describe("published listing completeness and search literals", () => {
     if (view.kind === "ok") expect(view.listing.images).toHaveLength(1);
   });
 
-  // QA-09: catalog and panel interpolate q into ILIKE without escaping % / _.
-  it.fails("treats % and _ as literals in catalog and panel search (QA-09)", async () => {
+  it("treats % and _ as literals in catalog and panel search (QA-09)", async () => {
     const percent = await published("Casa 50% en Tumbaco", { city: "Tumbaco" });
     const wildcard = await published("Casa 50X en Tumbaco", { city: "Tumbaco" });
     const underscore = await published("Depto A_B en Cumbayá", { city: "Cumbayá" });

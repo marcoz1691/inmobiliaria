@@ -35,7 +35,6 @@ function aroundConsent(html: string): string | undefined {
 
 test.describe("LOPDP consent control on public HTML", () => {
   test("contacto and listing place a /privacidad link next to the checkbox", async ({ request }) => {
-    test.fail(true, "QA-consent: el checkbox aún no enlaza a /privacidad; r4/product.");
     for (const path of ["/contacto", `/propiedades/${SLUG}`]) {
       const html = await (await request.get(path, { timeout: 120_000 })).text();
       const slice = aroundConsent(html);
