@@ -1,151 +1,168 @@
 # QA exploratorio — 2026-10-20
 
-- **Rama:** `r3/qa` (snapshot de `main` @ `7fbe338`).
-- **Entorno:** `next dev -p 3305`, PGlite propia (`.data/pglite-qa`), seed con `SEED_E2E_FIXTURES=1`, sin credenciales de integraciones. Navegador: Playwright Chromium, 1440 px y Pixel 7, `es-EC`, `America/Guayaquil`.
-- **Evidencia:** capturas en `qa-scripts/shots/`, volcados en `qa-scripts/drafts/` (no se commitean; son reproducibles con los scripts de `qa-scripts/`).
-- **Criterios de aceptación:** reglas de `AGENTS.md`, `docs/adr/0001-arquitectura.md` y `docs/integrations.md`.
-- **Nota de entorno:** la máquina estuvo muy cargada (primer render de una ruta: 10–120 s). Lo que no se pudo confirmar se marca **no verificado**.
+- **Rama:** `r3/qa` (snapshot de `main` en `7fbe338`).
+- **Entorno:** `next dev -p 3305`, PGlite propio (`.data/pglite-qa`), seed con `SEED_E2E_FIXTURES=1`, sin credenciales de integraciones.
+- **Herramientas:** Playwright (Chromium, 1440 px) con scripts en `qa-scripts/`, más `curl` para las requests HTTP directas.
+- **Evidencia:** capturas en `qa-scripts/shots/` y volcados en `qa-scripts/drafts/` (no se commitean).
+- **Limitación del entorno:** el servidor de desarrollo fue muy lento. El primer render de cada ruta tardó entre 2 y 6 min, y el proceso se cayó dos veces durante la sesión. Por eso la cobertura de embudo, agenda, prospectos, móvil y a11y quedó **pendiente** (ver "No cubierto").
 
-## Resumen
+## Resumen de bugs
 
 | ID | Sev. | Área | Título |
 |---|---|---|---|
-| QA-01 | P0 | Privacidad / importación | El importador de catálogos copia la dirección exacta en la **descripción pública** |
-| QA-02 | P0 | Seguridad / privacidad | Los PDF originales (linderos, catastro, contactos del banco) se descargan sin sesión desde `/media/…` |
-| QA-03 | P2 | Panel / a11y | Error de hidratación en el gestor de fotos: `aria-describedby` de arrastre apunta a un id inexistente |
-| QA-04 | P2 | Panel / reglas de publicación | Una propiedad publicada puede quedar sin precio o sin fotos (no se revalida al editar) |
-| QA-05 | P2 | Seguridad (hardening) | Sin Content-Security-Policy; `X-Powered-By` expuesto; HSTS `preload` para dominios de clientes |
-| QA-06 | P3 | Panel / UX | «Marcar revisión completa» no muestra estado pendiente ni se desactiva |
-| QA-07 | P3 | Copy / sitio público | La ficha promete «La dirección exacta se comparte al agendar la visita», pero ningún flujo la comparte |
-| QA-08 | P3 | Copy / importación | Rechazo del .pptx y PDF sin fichas: mensajes poco accionables |
-| QA-09 | P3 | Sitio público | La búsqueda del catálogo no escapa `%` y `_` en `ilike` |
+| QA-01 | P0 | Privacidad / almacenamiento | El PDF original de cada importación se descarga sin sesión desde una URL pública y predecible |
+| QA-02 | P1 | Privacidad / importación | El importador copia la dirección exacta en la **descripción** (campo público) aunque la ubicación sea "Aproximada" |
+| QA-03 | P2 | Panel / a11y | Error de hidratación en `PhotoManager` (dnd-kit): `aria-describedby` apunta a un id inexistente |
+| QA-04 | P2 | Seguridad / cabeceras | Sin CSP; se expone `X-Powered-By`; HSTS con `preload; includeSubDomains` en dominios de clientes |
+| QA-05 | P2 | Panel / reglas de publicación | Una propiedad ya publicada puede quedarse sin foto o sin precio: las reglas de publicación no se revalidan |
+| QA-06 | P3 | Sitio público / copy | "La dirección exacta se comparte al agendar la visita": ningún flujo lo hace |
+| QA-07 | P3 | Importación / copy | Un PDF sin fichas reconocibles solo dice "No se encontraron propiedades", sin indicar qué hacer |
+| QA-08 | P3 | Importación / copy | El rechazo del `.pptx` es correcto, pero no sugiere exportarlo a PDF |
+| QA-09 | P3 | SEO / multi-tenant | `siteOrigin` usa `x-forwarded-host` y el tenant usa `host`: canonical, OG y sitemap pueden divergir detrás de un proxy |
 
 ---
 
-## Hallazgos
+## QA-01 · P0 · El PDF original de la importación es público
 
-### QA-01 · P0 · El importador de catálogos copia la dirección exacta en la descripción pública
+**Área:** privacidad, almacenamiento de medios.
 
-- **Área:** importación de PDF → contenido público.
-- **Pasos:**
-  1. Panel → Importar PDF → subir `PRESENTACIÓN BIENES MAYO 2026 (1).pdf` (catálogo del Banco del Austro, 21 fichas).
-  2. Abrir el borrador «Terreno en Santa Lucia, Cumbayá» → paso «Detalles».
-- **Esperado:** con privacidad «Aproximada (recomendado)» la dirección no se publica (AGENTS.md: «Ubicación pública aproximada por defecto»; ADR §9: «la dirección no se muestra»). El campo `address` queda privado y ningún campo publicable debe contener la calle/lote.
-- **Obtenido:** el campo **Descripción** (público) contiene la dirección literal del bloque `DIRECCIÓN:` del PDF:
-  `Descripción = "Lote # 3, barrio Santa Lucia, calle Chimborazo y Pasaje González. Área de Terreno: 5.418,91 m2 y construcción interna tipo vivienda de 2 plantas de 216,00 m2."`
-  y a la vez `Dirección = "Lote # 3, barrio Santa Lucia, calle Chimborazo y Pasaje González."` con privacidad «Aproximada».
-  La descripción se renderiza en la ficha, en `<meta name="description">`, OpenGraph/Twitter (`summary()` en la página) y en el JSON-LD (`description`). Es decir, al publicar se filtra la dirección exacta por cuatro vías aunque el mapa la oculte. El aviso de revisión no lo advierte (solo avisa de avalúo y contactos de terceros), así que un agente que confía en «Aproximada» la publicará.
-- **Alcance:** afecta a las fichas de catálogo (el parser `catalog.ts`). En las fichas individuales (Condado, Pomasqui, Las Palmeras, Fernández, Radisson) la descripción quedó limpia (`Uso residencial.` / distribución), la dirección solo fue al campo privado `address`.
-- **Evidencia:** `qa-scripts/drafts/publish.json` (clave `santalucia`), captura `qa-scripts/shots/04-santalucia-detalles.png`.
-- **Causa probable:** `src/modules/imports/catalog.ts` líneas ~288–295: `address` se arma con las primeras líneas de `desc`, pero `description` se fija con `text` completo (que incluye esas mismas líneas):
-  ```
-  setField(l, "address", collapseSpaces(addressLines.join(" ")) || null, "low");
-  setField(l, "description", text || null, "high");
-  ```
-- **Sugerencia:** construir la descripción sin las líneas de dirección (y marcarla `low` para que aparezca «Verifica este dato»); añadir un test en `imports/extract.test.ts` que verifique que `description` no contiene `address`.
+**Pasos:**
+1. En `/panel/importar`, importa `CASA CONDADO COUNTRY - QUITO.pdf`.
+2. Abre cualquier propiedad pública y copia el `tenantId` de la URL de una foto (aparece en el HTML, en el JSON-LD y en `og:image`): `/media/tenants/<tenantId>/properties/...`.
+3. Calcula el SHA-256 del PDF y, **sin sesión**, pide `GET /media/tenants/<tenantId>/imports/<sha256>.pdf`.
 
-### QA-02 · P0 · Los PDF originales se descargan sin sesión desde `/media/…`
+**Esperado:** 401/404. El PDF fuente contiene linderos, el código catastral (`1300107007001001007`) y nombres, celulares y correos de empleados del banco. Solo debería verlo un miembro del tenant (para eso existe `/api/panel/imports/[id]/pdf`, que sí exige sesión).
 
-- **Área:** seguridad / privacidad de documentos fuente.
-- **Pasos (reproducido):**
-  1. Importar cualquier PDF desde el panel (p. ej. `CASA CONDADO COUNTRY - QUITO.pdf`).
-  2. Sin cookies, abrir el catálogo público `/propiedades`: el HTML expone el id del tenant en cada foto (`/media/tenants/61be74f9-e6da-42e8-9f17-2b71ae6ddabf/properties/…`).
-  3. `curl http://localhost:3305/media/tenants/<tenantId>/imports/<sha256 del PDF>.pdf` **sin sesión**.
-- **Esperado:** el PDF original solo es accesible por la ruta autenticada `/api/panel/imports/[id]/pdf` (así lo documenta el propio código: «Source PDF of an import, only for signed-in members of the tenant»). Esos PDF contienen linderos, códigos catastrales, nombres, celulares y correos de empleados de bancos (Banco Guayaquil, Banco del Austro) y coordenadas exactas: nada de eso puede ser público (AGENTS.md).
-- **Obtenido:**
-  ```
-  200 application/pdf 916785
-  %PDF-1.7
-  ```
-  En producción es peor: `SupabaseStorage.url()` devuelve `…/storage/v1/object/public/<bucket>/tenants/<id>/imports/<sha>.pdf` y `readImportPdf()` lee el PDF **por esa URL pública**, o sea que el bucket debe ser público para que funcione la vista del panel. La clave es determinista (SHA-256 del archivo): cualquiera que tenga el folleto (circulan por WhatsApp) puede confirmar y descargar la copia, y la clave no se rota.
-- **Causa probable:**
-  - `src/modules/imports/service.ts:101` guarda en `tenants/${tenantId}/imports/${sha}.pdf` con el mismo `getStorage()` que las fotos públicas.
-  - `src/app/media/[...key]/route.ts` sirve cualquier clave bajo `.data/media` sin autenticación y además mapea `pdf → application/pdf`.
-  - `src/modules/imports/service.ts:224-229` (`readImportPdf`) usa la URL pública en Supabase.
-- **Sugerencia:** bucket privado separado para `imports/` (descarga con service role o URL firmada de corta vida), clave aleatoria en vez del SHA, y que `/media` rechace todo lo que no sea `tenants/*/properties|agents/*.webp`.
+**Obtenido:**
+```
+GET /media/tenants/61be74f9-…/imports/<sha256>.pdf   (sin cookies)
+200 application/pdf 916785B   → empieza con "%PDF-"
+```
+En producción es peor: `SupabaseStorage.url()` devuelve `…/storage/v1/object/public/<bucket>/tenants/<id>/imports/<sha>.pdf`, o sea que los PDFs están en el **bucket público**. Además, `readImportPdf` los lee justamente por esa URL pública. La clave es determinista (el hash del archivo) y el `tenantId` es público: cualquiera que tenga o reciba el PDF del banco puede confirmar que existe y descargarlo. Si en algún momento se activa el listado del bucket, quedan expuestos todos.
 
-### QA-03 · P2 · Error de hidratación en el gestor de fotos (dnd-kit)
+**Causa probable:**
+- `src/modules/imports/service.ts:101`: `storageKey = tenants/${tenantId}/imports/${sha}.pdf` se guarda con `getStorage().put` en el mismo almacenamiento público que las fotos.
+- `src/modules/media/storage.ts:58`: la URL es pública.
+- `src/app/media/[...key]/route.ts`: sirve cualquier clave, con `application/pdf` incluido en `TYPES`.
 
-- **Área:** panel → asistente de propiedad → Fotos; accesibilidad.
-- **Pasos:** abrir cualquier borrador con fotos (`/panel/propiedades/<id>`), consola del navegador / log de `next dev`.
-- **Esperado:** sin errores de hidratación.
-- **Obtenido:** «A tree hydrated but some attributes of the server rendered HTML didn't match…» con
-  ```
-  +  aria-describedby="DndDescribedBy-0"
-  -  aria-describedby="DndDescribedBy-135"
-  ```
-  en cada botón «Mover foto N de M». React no corrige atributos en la hidratación, así que el botón queda apuntando a un id que no existe: el lector de pantalla no anuncia las instrucciones de arrastre con teclado. Next muestra además el globo «1 issue» en dev (`qa-scripts/shots/03-draft-0.png`).
-- **Causa probable:** `src/components/admin/wizard/PhotoManager.tsx`: `DndContext` sin prop `id` estable (dnd-kit genera ids con un contador global distinto en servidor y cliente). Pasar `id={useId()}` o renderizar el sortable solo en cliente.
+**Sugerencia:** guardar los PDFs en un bucket privado (o con prefijo privado) y leerlos con service role o URL firmada. Que `/media` rechace `*/imports/*` y `.pdf`. Usar una clave aleatoria en vez del hash.
 
-### QA-04 · P2 · Una propiedad publicada puede quedar sin precio o sin fotos
+## QA-02 · P1 · Dirección exacta dentro de la descripción pública
 
-- **Área:** panel → reglas de publicación. **Detectado leyendo el código; no verificado en la UI.**
-- **Pasos:** con una propiedad publicada, borrar el precio en «Básicos» (autosave) o eliminar todas sus fotos.
-- **Esperado:** las mismas reglas de `publishProblems` aplican mientras la propiedad está en línea, o la edición se bloquea / se pausa con aviso.
-- **Obtenido (código):** `updateDraft()` (`src/modules/properties/service.ts:84`) y `removePhoto()` (`:282`) no revalidan nada si el estado es `published`; `publishProblems` solo se evalúa en `changeStatus(..., "published")`. El sitio mostraría una ficha publicada sin foto ni precio.
+**Área:** privacidad, importación de catálogos.
 
-### QA-05 · P2 · Cabeceras de seguridad incompletas
+**Pasos:**
+1. Importa `PRESENTACIÓN BIENES MAYO 2026 (1).pdf` (catálogo del banco, 21 borradores).
+2. Abre el borrador "Terreno en Santa Lucia, Cumbayá" en el paso **Detalles**.
 
-- **Pasos:** `curl -sI http://localhost:3305/` y `/panel/ingresar`.
-- **Obtenido:** hay `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy`, `Permissions-Policy` y HSTS, pero:
-  - no hay `Content-Security-Policy` (el sitio inyecta JSON-LD y, con el Pixel, scripts de terceros; el panel maneja datos personales);
-  - `X-Powered-By: Next.js` (`poweredByHeader: false` en `next.config.ts`);
-  - `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` se envía en **todos** los hosts, también en dominios propios de cada agente. `preload` + `includeSubDomains` sobre un dominio de cliente puede romper subdominios que no tengan HTTPS y es difícil de revertir; debería decidirlo cada tenant.
-- **Causa:** `next.config.ts` (`securityHeaders`).
+**Esperado:** la dirección va solo en el campo `Dirección` (que no se publica con privacidad "Aproximada") y la descripción no contiene calle, lote ni intersección.
 
-### QA-06 · P3 · «Marcar revisión completa» sin estado pendiente
+**Obtenido:**
+```
+Descripción = "Lote # 3, barrio Santa Lucia, calle Chimborazo y Pasaje González. Área de Terreno: 5.418,91 m2 y construcción interna tipo vivienda de 2 plantas de 216,00 m2."
+Dirección   = "Lote # 3, barrio Santa Lucia, calle Chimborazo y Pasaje González."
+Ubicación   = Aproximada (recomendado) — "la dirección no se publica"
+```
+`toPublic` publica `description` tal cual, y la ficha la muestra en la página, en el JSON-LD (`description`) y en `og:description`. Cuando el agente confirme el precio (hoy lo bloquea el avalúo) y publique, la dirección exacta queda en línea pese a la promesa de la UI.
 
-- **Pasos:** abrir un borrador importado y pulsar «Marcar revisión completa» con el servidor lento.
-- **Esperado:** botón desactivado con «Guardando…» hasta la respuesta.
-- **Obtenido:** el botón sigue activo varios segundos sin feedback; si el agente pasa a «Revisar y publicar» antes de la respuesta, ve «Revisa los datos importados…» como problema aunque ya pulsó. Al recargar la revisión sí aparece completa.
-- **Causa:** `src/components/admin/wizard/PropertyWizard.tsx` `completeReview()` sin estado `pending`.
+**Evidencia:** `qa-scripts/shots/04-santalucia-detalles.png`, `qa-scripts/drafts/publish.json`.
 
-### QA-07 · P3 · Promesa de compartir la dirección al agendar
+**Causa probable:** `src/modules/imports/catalog.ts` arma la descripción a partir del bloque `DIRECCIÓN:` del catálogo. En las fichas individuales (Condado, Palmeras, Pomasqui, Fernández, Radisson) la descripción fue solo "Uso residencial/comercial." y la dirección quedó en su campo.
 
-- **Dónde:** ficha pública con ubicación aproximada: «Zona aproximada en … La dirección exacta se comparte al agendar la visita.» (`src/app/(public)/(site)/propiedades/[slug]/page.tsx:211`).
-- **Problema:** ni la confirmación de cita, ni el .ics, ni las plantillas de `docs/integrations.md` incluyen la dirección de la propiedad. La frase promete algo que el producto no hace. Sugerencia: «Te comparto la dirección exacta cuando coordinemos la visita.»
+**Sugerencia:** no incluir el bloque de dirección en `description`. Revisar los 21 borradores del catálogo.
 
-### QA-08 · P3 · Mensajes de importación poco accionables
+## QA-03 · P2 · Error de hidratación en el gestor de fotos
 
-- `BODEGA PELILEO.pptx` → «Solo se aceptan archivos PDF.» Correcto (se rechaza en cliente), pero no dice qué hacer. Sugerencia: «Solo se aceptan PDF. Exporta la presentación como PDF e inténtalo de nuevo.» (`src/components/admin/PdfImporter.tsx:40`). El rechazo en servidor (`El archivo no es un PDF válido.`, por firma `%PDF-`) existe en código; **no verificado** por HTTP todavía.
-- `folleto de ventas corregido.pdf` (16 págs., planos del proyecto «Terrazas del Valle», Cumbayá) → «No se encontraron propiedades en el PDF.» Sin pista de por qué ni de qué hacer (crear la ficha a mano). Sugerencia: «No encontramos fichas con precio y dirección. Puedes crear la propiedad a mano y adjuntar fotos.»
+**Área:** panel, accesibilidad.
 
-### QA-09 · P3 · Búsqueda del catálogo sin escapar comodines
+**Pasos:** abre `/panel/propiedades/<id>` de cualquier propiedad con fotos y mira la consola o el indicador "1 issue" de Next.
 
-- `q` se usa como `ilike '%${q}%'` sin escapar `%`/`_` (`src/modules/properties/service.ts` `catalogWhere`; también `listForPanel`). `q=%` o `q=_` devuelven todo. Sin riesgo de inyección (parámetros enlazados), solo resultados inesperados.
+**Obtenido** (log del servidor de desarrollo):
+```
+<button … aria-roledescription="sortable"
++  aria-describedby="DndDescribedBy-0"
+-  aria-describedby="DndDescribedBy-135"
+   aria-label="Mover foto 5 de 6">
+```
+React avisa que no corrige el atributo: las instrucciones para lector de pantalla del arrastre con teclado apuntan a un id que no existe. Pasa en todas las páginas del asistente, porque `PhotoManager` queda montado aunque esté oculto.
+
+**Causa probable:** `src/components/admin/wizard/PhotoManager.tsx`: `<DndContext>` sin `id` estable. **Sugerencia:** `id={useId()}`.
+
+## QA-04 · P2 · Cabeceras de seguridad incompletas
+
+**Obtenido** (`curl -I /` y `/panel/ingresar`): `X-Content-Type-Options`, `Referrer-Policy`, `X-Frame-Options: DENY`, `Permissions-Policy` y `Strict-Transport-Security: max-age=63072000; includeSubDomains; preload` están presentes, pero:
+- no hay `Content-Security-Policy` (el sitio público renderiza texto del agente e importado, mapas e imágenes de terceros);
+- se envía `X-Powered-By: Next.js`;
+- `includeSubDomains; preload` se envía en **todos** los dominios de los tenants. En un dominio propio del agente, eso fuerza HTTPS en todos sus subdominios y lo habilita para la lista de preload sin que el agente lo haya decidido.
+
+**Causa:** `next.config.ts` (`securityHeaders`, falta `poweredByHeader: false`).
+
+## QA-05 · P2 · Las reglas de publicación no se revalidan después de publicar
+
+**Fuente:** lectura de código. No reproducido en la UI por falta de tiempo.
+- `src/modules/properties/service.ts` `updateDraft` (l. 84-114) acepta `price: null` o `priceKind: "appraisal"` en una propiedad `published` sin volver a ejecutar `publishProblems`.
+- `removePhoto` (l. 282) deja borrar la última foto de una propiedad publicada.
+
+**Resultado esperado del bug:** una ficha pública sin foto ni precio, o un avalúo mostrado como "Precio a consultar".
+
+**Pasos para confirmar:** publica una propiedad, borra el precio en Básicos y mira la ficha pública. Luego elimina todas las fotos.
+
+## QA-06 · P3 · Promesa de copy no implementada
+
+La ficha con ubicación aproximada dice "La dirección exacta se comparte al agendar la visita." (`src/app/(public)/(site)/propiedades/[slug]/page.tsx:211`). Ni las plantillas de confirmación (`docs/integrations.md`, `templates.ts`) ni `/cita/[token]` incluyen la dirección. Sugerencia: "El asesor te comparte la dirección exacta antes de la visita."
+
+## QA-07 · P3 · PDF sin fichas: mensaje sin salida
+
+`folleto de ventas corregido.pdf` (16 páginas de planos de "Terrazas del Valle", Cumbayá) termina en "No se encontraron propiedades en el PDF." Correcto no inventar nada, pero falta el siguiente paso, por ejemplo: "Crea la propiedad a mano y sube las fotos" con un enlace a `/panel/propiedades/nueva`. Archivo: `src/components/admin/PdfImporter.tsx:19`.
+
+## QA-08 · P3 · Rechazo del .pptx
+
+`BODEGA PELILEO.pptx` se rechaza en el cliente con "Solo se aceptan archivos PDF." (correcto; el servidor además valida la firma `%PDF-`). Sugerencia: "Solo se aceptan PDF. Si es una presentación, expórtala como PDF e inténtalo de nuevo."
+
+## QA-09 · P3 · Origen público distinto del host del tenant
+
+`src/app/(public)/_lib/site.ts:14` arma canonical, OG, sitemap y `robots` con `x-forwarded-host ?? host`, mientras que `getCurrentTenant` (`src/server/tenant.ts`) usa solo `host`. Detrás de un proxy que reenvíe un `X-Forwarded-Host` del cliente, el sitemap de un tenant podría anunciar URLs de otro dominio. En Vercel la cabecera la fija la plataforma: riesgo bajo, pero conviene usar la misma fuente.
 
 ---
 
-## Cobertura: qué se probó y salió bien
+## Cobertura: probado y correcto
 
-**Importación de los 11 PDF + 1 .pptx (desde la UI del panel, en lote)**
-- 10 PDF de ficha + 1 catálogo procesados en ~2 min; el catálogo generó 21 borradores y avisó «Página 11: tiene valores pero no un bloque "DIRECCIÓN:"; no se generó borrador».
-- El .pptx se rechaza antes de subir.
-- **Linderos:** omitidos en todos los borradores, con aviso «Se omitieron los linderos del PDF: no se copian a campos publicables».
-- **Códigos catastrales / predio** (`10108003009`, `1300107007001001007`, `3644265`, `10220027004002…`, `048-015-021`): omitidos, con aviso.
-- **Contactos de bancos** (Banco Guayaquil: nombres, celulares, correos; Banco del Austro: administradores, teléfonos, extensiones): omitidos de todos los campos de texto, con aviso.
-- **Avalúo:** las 20 fichas con «VALOR AVALUO» quedan `priceKind = appraisal`, se muestran «Avalúo US$…» en la revisión, la vista previa dice «Precio a consultar» y `publishProblems` bloquea la publicación hasta confirmar el precio. El JSON-LD omite `offers` cuando es avalúo (código).
-- Precio por m² («VALOR DE PRE-VENTA: $60,00 M2»): no se inventa precio total; queda en nota y se avisa.
-- Provincia inválida («provincia Tena»): se deja vacía y se avisa. Campos ausentes quedan vacíos (no inventados).
-- Coordenadas exactas del PDF: van a `lat/lng` con privacidad «Aproximada» por defecto (redondeo a 2 decimales ≈ 1 km en `toPublic`).
-- Todo borrador importado queda `needsReview` y no se puede publicar hasta «Marcar revisión completa».
-- Marca eXp: no aparece en el texto de ningún PDF ni en los borradores.
+**Acceso y seguridad HTTP**
+- Sin sesión, `/panel`, `/panel/propiedades`, `/panel/prospectos`, `/panel/integraciones`, `/panel/propiedades/nueva` y `/panel/importar` responden 307 a `/panel/ingresar`.
+- Sin sesión, `POST /api/panel/imports`, `GET /api/panel/imports/<id>/pdf`, `POST /api/panel/properties/<id>/photos` y `POST /api/panel/profile/photo` responden 401 con mensaje en español.
+- `/api/cron/jobs` responde 401 sin `CRON_SECRET`, con `Bearer undefined` y con `Bearer ` vacío.
+- `/api/webhooks/meta` responde 503 ("Webhook de Meta no configurado") en GET y POST sin credenciales, como define `docs/integrations.md`.
+- Path traversal en `/media` (`..%2f`, `--path-as-is ../../.data/dev-secret`) → 404. `resolveLocal` valida el prefijo.
+- `/cita/<token inválido>` y `/cita/<token>/ics` → 404. `/api/opt-out?t=abc` → 400.
+- `POST /api/chat` sin `ANTHROPIC_API_KEY` → `{"status":"unavailable"}`.
+- `/dev/design` hace `notFound()` en producción y está en `disallow` de `robots`.
 
-**Seguridad (sin sesión)**
-- `/panel`, `/panel/propiedades`, `/panel/prospectos`, `/panel/integraciones`, `/panel/propiedades/nueva`, `/panel/importar` → 307 a `/panel/ingresar`.
-- `POST /api/panel/imports`, `POST /api/panel/properties/<id>/photos`, `POST /api/panel/profile/photo`, `GET /api/panel/imports/<id>/pdf` → 401 con mensaje en español.
-- `GET /api/cron/jobs` sin header, con `Bearer undefined` y con `Bearer ` vacío → 401 (sin `CRON_SECRET` nunca autoriza).
-- `GET/POST /api/webhooks/meta` sin `META_APP_SECRET` → 503 «Webhook de Meta no configurado» (comportamiento esperado según `docs/integrations.md`).
-- `/dev/design` responde 200 en dev pero tiene `notFound()` en producción y `noindex`.
-- Fotos: `processImage` valida por contenido con sharp y no copia metadatos (sin `withMetadata`), lo que elimina EXIF/GPS (código; prueba con imagen real pendiente).
+**Integraciones:** `/panel/integraciones` muestra los 8 canales como "No conectado", con las variables que faltan y sin valores. "No hay tareas en espera."
 
-**Panel**
-- Login correcto redirige a `/panel`; todas las secciones cargan (200).
-- `/panel/integraciones`: los 8 canales muestran «No conectado» con las variables que faltan; «Tareas en espera… No hay tareas en espera». Honesto, conforme a AGENTS.md.
-- Inicio: «Completa tu perfil — Falta: titular, biografía, WhatsApp, correo. Tu sitio oculta lo que no has llenado.»
+**Importación de los 12 archivos de `assets-input/pdfs/`**
+- Las 10 fichas individuales generaron 1 borrador cada una; el catálogo del Banco del Austro, 21 borradores; el folleto, 0. El `.pptx` se rechazó.
+- Linderos, código catastral/predio y contactos de terceros (Banco Guayaquil y Banco del Austro) **no** se copiaron a campos publicables, y cada borrador lo avisa.
+- Los valores "VALOR AVALUO" quedaron como `appraisal`, se muestran como "Avalúo US$…" en la revisión y **bloquean** la publicación.
+- El precio por m² (Tobachiri-Chico) no se fijó como precio. La "provincia Tena" (inexistente) quedó vacía, con aviso. La página 11 del catálogo, sin bloque "DIRECCIÓN:", quedó señalada para revisión manual.
+- Todos los borradores nacen con `needsReview` y no se pueden publicar hasta marcar la revisión.
 
-## No verificado (hasta este commit)
+**Publicación y ficha pública** (Condado Country, publicada desde el asistente)
+- En el HTML de `/propiedades/casa-no-7-conj-condado-country-quito` no aparecen la calle (Juan Procel, OE-340, Rio Picuno), los parqueaderos 13/14, las coordenadas exactas (−0.1083910, −78.5079437), el código catastral, los nombres, teléfonos ni correos del banco, la palabra "linderos", ni la marca eXp (las 5 coincidencias de "exp" son subcadenas de otras palabras).
+- El mapa usa −0.11, −78.51 (≈1 km).
+- El JSON-LD no incluye `streetAddress` ni `geo`. `og:description` = "Casa en venta en Mena del Hierro, Quito. Uso de suelo residencial."
+- El RSC payload no incluye `reviewNotes`, `fieldConfidence`, `sourceImportId` ni `createdBy`.
+- El sitemap lista solo las publicadas (2 fixtures + Condado) y el embudo activo.
 
-- Publicación real de borradores importados y su revisión en ficha pública, HTML, JSON-LD, OpenGraph y sitemap (el flujo se interrumpió por la lentitud del servidor; QA-01 se confirmó en el borrador).
-- Respuestas del chat (sin API key).
-- Mensaje de contraseña incorrecta (a los 4 s seguía «Ingresando…»).
+**Medios:** `processImage` valida por contenido con sharp y reencoda a WebP sin `withMetadata`, así que se eliminan EXIF y GPS. Revisado en código; falta subir una foto con GPS real (ver abajo).
+
+## No cubierto en esta sesión (pendiente)
+
+Lo dejo explícito para que el orquestador lo reasigne o lo cubra el SDET con e2e:
+1. **Embudo y agenda:** calificado vs. descalificado, doble reserva concurrente, franjas pasadas, America/Guayaquil, cancelar/re-reservar, `.ics` real, cambios del horario semanal, embudo pausado.
+2. **Prospectos:** mover etapa, notas, tareas, motivo de pérdida. **Perfil:** foto, redes, WhatsApp y su reflejo en el sitio.
+3. **Asistente:** autosave con red caída, validaciones numéricas en la UI, duplicar/pausar/archivar, reordenar fotos y cambiar portada.
+4. **Subidas:** foto con EXIF/GPS (verificar con `exiftool` la variante 1600), tipo falso, >15 MB.
+5. **IDOR entre tenants** (requiere un segundo tenant y dominio en el seed), rate limit del chat (30/10 min por IP), opt-out completo (GET de confirmación + POST).
+6. **Móvil (Pixel 7) y a11y:** teclado, foco, tab bar, objetivos táctiles. Lo cubre en parte el SDET con axe.
+7. **Rate limit de login:** desactivado fuera de producción por diseño (`src/server/auth.ts`). Hay que probarlo en un preview.
+8. **Mensaje de contraseña incorrecta:** a los 4 s el botón seguía en "Ingresando…" (`qa-scripts/shots/01-login-wrong.png`). No pude confirmar si luego aparece un error, por la lentitud del servidor. Volver a probar con más espera.
