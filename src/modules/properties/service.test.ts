@@ -105,4 +105,52 @@ describe("properties service", () => {
     expect(copy.slug).not.toBe(p.slug);
     expect((await svc.getForEdit(mA, copy.id)).media).toHaveLength(1);
   });
+
+  async function publishComplete(title: string) {
+    const p = await svc.createDraft(mA, title);
+    await svc.updateDraft(mA, p.id, { operation: "sale", propertyType: "house", price: 140000, city: "Quito" });
+    await svc.addPhoto(mA, p.id, await jpeg());
+    return svc.changeStatus(mA, p.id, "published");
+  }
+
+  it("rejects removing the price or last photo of a published or reserved listing", async () => {
+    const published = await publishComplete("Casa publicada en Tumbaco");
+    await expect(svc.updateDraft(mA, published.id, { price: null })).rejects.toMatchObject({
+      code: "invalid",
+      details: { problems: expect.arrayContaining(["Ingresa el precio."]) },
+    });
+    expect((await svc.getForEdit(mA, published.id)).property.price).toBe(140000);
+
+    const { media } = await svc.getForEdit(mA, published.id);
+    await expect(svc.removePhoto(mA, published.id, media[0]!.id)).rejects.toMatchObject({
+      code: "invalid",
+      details: { problems: expect.arrayContaining(["Sube al menos una foto."]) },
+    });
+    expect((await svc.getForEdit(mA, published.id)).media).toHaveLength(1);
+
+    const reserved = await svc.changeStatus(mA, published.id, "reserved");
+    await expect(svc.updateDraft(mA, reserved.id, { city: null })).rejects.toMatchObject({ code: "invalid" });
+    expect((await svc.getForEdit(mA, reserved.id)).property.city).toBe("Quito");
+
+    // Allowed: extra photo can still be removed; drafts can still drop a price.
+    const extra = await svc.addPhoto(mA, reserved.id, await jpeg());
+    await svc.removePhoto(mA, reserved.id, extra.id);
+    expect((await svc.getForEdit(mA, reserved.id)).media).toHaveLength(1);
+
+    const draft = await svc.createDraft(mA, "Borrador sin publicar");
+    await svc.updateDraft(mA, draft.id, { price: 10 });
+    await expect(svc.updateDraft(mA, draft.id, { price: null })).resolves.toMatchObject({ price: null });
+  });
+
+  it("does not treat % or _ as ILIKE wildcards in panel or catalog search", async () => {
+    const p = await publishComplete("Casa en Nayón centro");
+    const catalogStar = await svc.listCatalog(A.tenant.id, { q: "%" });
+    expect(catalogStar.items.map((i) => i.id)).not.toContain(p.id);
+    const panelStar = await svc.listForPanel(mA, { q: "%" });
+    expect(panelStar.map((i) => i.id)).not.toContain(p.id);
+    const catalogUnderscore = await svc.listCatalog(A.tenant.id, { q: "_" });
+    expect(catalogUnderscore.items.map((i) => i.id)).not.toContain(p.id);
+    expect((await svc.listCatalog(A.tenant.id, { q: "Nayón" })).items.map((i) => i.id)).toContain(p.id);
+    expect((await svc.listForPanel(mA, { q: "Nayón" })).map((i) => i.id)).toContain(p.id);
+  });
 });
