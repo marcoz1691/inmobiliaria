@@ -21,6 +21,7 @@
 | QA-08 | P3 | Importación / copy | El rechazo del `.pptx` es correcto, pero no sugiere exportarlo a PDF |
 | QA-09 | P3 | SEO / multi-tenant | `siteOrigin` usa `x-forwarded-host` y el tenant usa `host`: canonical, OG y sitemap pueden divergir detrás de un proxy |
 | QA-10 | P1 | Seguridad / ingreso | El formulario de ingreso no declara `method="post"`: sin JS hidratado el navegador manda correo y contraseña en la URL |
+| QA-11 | P3 | Copy | `notFound("Propiedad")` responde "Propiedad no encontrado" (género) |
 
 ---
 
@@ -149,6 +150,18 @@ El servidor de desarrollo lo registró en claro. En producción pasaría a acces
 
 **Nota:** el ingreso por `POST /api/auth/sign-in/email` con JSON sí funciona (200 + cookie).
 
+## QA-11 · P3 · "Propiedad no encontrado"
+
+**Área:** copy, API del panel.
+
+**Pasos:** con sesión del tenant piloto, `POST /api/panel/properties/<uuid de otro tenant>/photos` con un JPEG mínimo.
+
+**Esperado:** 404 y un mensaje en español de Ecuador, concordado: "Propiedad no encontrada."
+
+**Obtenido:** `404 {"ok":false,"error":"Propiedad no encontrado"}`.
+
+**Causa probable:** `src/lib/errors.ts` `notFound = (what) => … \`${what} no encontrado\`` se usa con sustantivos femeninos (Propiedad, Tarea, etc.).
+
 ---
 
 ## Cobertura: probado y correcto
@@ -189,11 +202,15 @@ El servidor de desarrollo lo registró en claro. En producción pasaría a acces
 - `/cita/<token inválido>` y `/cita/.../ics` → 404. Tokens de 32 `A` y 64 `0` → 404. `GET /cita/../panel` sin seguir redirección → 307 a `/panel/ingresar` (normalización de ruta, no IDOR).
 - IDOR (sesión de `qa@piloto.test`, ids del tenant `otro`): `GET /panel/propiedades/<id ajeno>` 404 (el HTML no contiene el título ajeno); `GET /panel/prospectos/<id ajeno>` 404; `GET /panel/importar/<id ajeno>` 404; `GET /api/panel/imports/<id ajeno>/pdf` 404 "No encontrado"; `POST /api/panel/properties/<id ajeno>/photos` con JPEG mínimo → 404 "Propiedad no encontrado". UUID cero → 404.
 
+### Parada por carga (sesión 2)
+
+Tras el pase de seguridad, `next dev` quedó bloqueado compilando `/agenda/[slug]` (más de 2 min sin responder, writes de filesystem cache). Un `GET /panel/ingresar` que **ya había compilado** (200 en ~12 s al inicio) pasó a timeout de 20 s con 0 bytes. No se mató ni recreó el proceso (la instrucción era no hacerlo más de una vez; el arranque inicial sí funcionó). Por eso **no se ejecutó** el exploratorio de embudo, panel ni copy/teclado en esta continuación.
+
 ## No cubierto en esta sesión (pendiente)
 
 Lo dejo explícito para que el orquestador lo reasigne o lo cubra el SDET con e2e:
-1. **Embudo y agenda:** calificado vs. descalificado, doble reserva concurrente, franjas pasadas, America/Guayaquil, cancelar/re-reservar, `.ics` real, cambios del horario semanal, embudo pausado.
-2. **Prospectos:** mover etapa, notas, tareas, motivo de pérdida. **Perfil:** foto, redes, WhatsApp y su reflejo en el sitio.
+1. **Embudo y agenda (sesión 2 no ejecutada, server colgado):** calificado vs. no calificado, doble reserva de la misma franja en dos contextos, franja pasada, cancelar y re-reservar, `.ics` real, America/Guayaquil, embudo pausado. Hay tests de unidad de `bookSlot` (doble reserva y pass falso) en `src/modules/funnels/service.test.ts`; no sustituyen el exploratorio de UI.
+2. **Panel:** mover etapa de prospecto, nota/tarea, perfil reflejado en el sitio público. También asistente (autosave, duplicar/pausar/archivar, fotos).
 3. **Asistente:** autosave con red caída, validaciones numéricas en la UI, duplicar/pausar/archivar, reordenar fotos y cambiar portada.
 4. **Subidas:** foto con EXIF/GPS (verificar con `exiftool` la variante 1600), tipo falso, >15 MB.
 5. **Rate limit del chat** (30/10 min por IP), opt-out completo (GET de confirmación + POST). IDOR de URLs del panel: cubierto en sesión 2. Falta IDOR de *server actions* del panel (mover etapa / guardar borrador) con id ajeno, y un segundo *dominio* (Host) para el tenant `otro`.
