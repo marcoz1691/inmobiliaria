@@ -13,9 +13,11 @@ type Props = {
   onPick: () => void;
 };
 
+// Selected: 2px blue edge (border + inset ring, so nothing shifts) on a faint blue wash.
 const optionClass =
-  "flex min-h-14 cursor-pointer items-center gap-4 rounded-sm border border-line-strong bg-white px-4 py-3 text-base text-ink " +
-  "transition-colors hover:border-ink has-[:checked]:border-navy has-[:checked]:bg-navy has-[:checked]:text-white " +
+  "flex min-h-16 cursor-pointer items-center gap-4 rounded-sm border border-line-strong bg-white px-5 py-4 text-[1.0625rem] text-ink " +
+  "transition-[border-color,background-color,box-shadow] duration-300 ease-apple hover:border-ink/70 " +
+  "has-[:checked]:border-navy has-[:checked]:bg-navy/[0.05] has-[:checked]:shadow-[inset_0_0_0_1px_var(--color-navy)] " +
   "has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-navy";
 
 export function QuestionStep({ question: q, value, error, onChange, onPick }: Props) {
@@ -85,7 +87,7 @@ export function QuestionStep({ question: q, value, error, onChange, onPick }: Pr
                   // detail > 0 means a real pointer click; arrow-key selection must not advance.
                   if (!multi && e.detail > 0) onPick();
                 }}
-                className={cn("size-5 shrink-0 accent-white", multi && "rounded-xs")}
+                className={cn("size-5 shrink-0 accent-navy", multi && "rounded-xs")}
               />
               <span>{o.label}</span>
             </label>

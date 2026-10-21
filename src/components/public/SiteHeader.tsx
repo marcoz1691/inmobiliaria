@@ -7,7 +7,7 @@ export type NavItem = { label: string; href: string };
 type SiteHeaderProps = {
   /** Agent's name, used as the wordmark. */
   name: string;
-  /** Short descriptor under the name, e.g. "Asesor inmobiliario · Quito". */
+  /** Short descriptor next to the name on wide screens, e.g. "Asesor inmobiliario · Quito". */
   tagline?: string;
   homeHref?: string;
   nav: NavItem[];
@@ -17,6 +17,7 @@ type SiteHeaderProps = {
   mainId?: string;
 };
 
+/** Sticky translucent bar: content scrolls underneath, blurred, like a native toolbar. */
 export function SiteHeader({
   name,
   tagline,
@@ -26,29 +27,31 @@ export function SiteHeader({
   ctaLabel = "Agenda una cita",
   mainId = "contenido",
 }: SiteHeaderProps) {
+  // The call to action already has its own pill; don't repeat it as a plain link.
+  const links = nav.filter((item) => item.href !== ctaHref);
   return (
-    <header className="sticky top-0 z-40 border-b border-line bg-paper">
+    <header className="glass sticky top-0 z-40 border-b border-ink/10">
       <a
         href={`#${mainId}`}
-        className="sr-only rounded-sm bg-navy px-4 py-3 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50"
+        className="sr-only rounded-full bg-navy px-4 py-3 text-sm font-medium text-white focus:not-sr-only focus:absolute focus:top-2 focus:left-2 focus:z-50"
       >
         Saltar al contenido
       </a>
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8 lg:h-20 lg:px-12">
-        <Link href={homeHref} className="group flex min-h-11 flex-col justify-center rounded-xs">
-          <span className="font-display text-xl leading-none tracking-tight text-ink lg:text-2xl">{name}</span>
+      <div className="mx-auto flex h-13 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8 lg:px-12">
+        <Link href={homeHref} className="flex min-h-11 min-w-0 items-center gap-3 rounded-xs">
+          <span className="truncate text-[1.0625rem] font-semibold tracking-[-0.02em] text-ink">{name}</span>
           {tagline ? (
-            <span className="mt-1 text-xs leading-none text-ink-muted">{tagline}</span>
+            <span className="hidden border-l border-line pl-3 text-xs text-ink-muted xl:inline">{tagline}</span>
           ) : null}
         </Link>
 
         <nav aria-label="Principal" className="hidden md:block">
-          <ul className="flex items-center gap-1">
-            {nav.map((item) => (
+          <ul className="flex items-center">
+            {links.map((item) => (
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className="inline-flex min-h-11 items-center rounded-full px-4 text-sm text-ink transition-colors hover:bg-ink/5"
+                  className="inline-flex min-h-11 items-center rounded-full px-3.5 text-sm text-ink/80 transition-colors duration-300 ease-apple hover:text-ink"
                 >
                   {item.label}
                 </Link>
@@ -58,10 +61,12 @@ export function SiteHeader({
         </nav>
 
         <div className="hidden md:block">
-          <Button href={ctaHref}>{ctaLabel}</Button>
+          <Button href={ctaHref} className="px-4 text-sm">
+            {ctaLabel}
+          </Button>
         </div>
 
-        <MobileNav nav={nav} ctaHref={ctaHref} ctaLabel={ctaLabel} />
+        <MobileNav nav={links} ctaHref={ctaHref} ctaLabel={ctaLabel} />
       </div>
     </header>
   );

@@ -20,21 +20,24 @@ type PriceProps = {
   className?: string;
   /** Text shown when there is no public price. */
   fallback?: string;
+  /** `dark` for night/ink sections: muted parts use the light-on-dark gray. */
+  tone?: "light" | "dark";
 };
 
 /**
  * Public price. `rent` adds "/mes". `appraisal` is an internal valuation and is never
  * rendered publicly; neither is a missing amount — both show the fallback instead.
  */
-export function Price({ amount, priceKind, className, fallback = "Precio a consultar" }: PriceProps) {
+export function Price({ amount, priceKind, className, fallback = "Precio a consultar", tone = "light" }: PriceProps) {
+  const muted = tone === "dark" ? "text-paper-muted" : "text-ink-muted";
   if (amount === null || priceKind === "appraisal") {
-    return <span className={cn("text-ink-muted", className)}>{fallback}</span>;
+    return <span className={cn(className, muted)}>{fallback}</span>;
   }
   return (
     <span className={className}>
       {formatUsd(amount)}
       {priceKind === "rent" ? (
-        <span className="font-normal text-ink-muted">
+        <span className={cn("font-normal", muted)}>
           <span aria-hidden="true">/mes</span>
           <span className="sr-only"> al mes</span>
         </span>
