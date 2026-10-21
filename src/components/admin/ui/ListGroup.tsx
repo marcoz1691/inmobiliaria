@@ -139,6 +139,9 @@ export function ListRow({ title, subtitle, leading, value, href, external, inset
   );
 }
 
+/** White card surface on the grouped background (forms, previews). */
+export const card = "rounded-md bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-ink/[0.04]";
+
 /** Content block inside a group (forms, free text) with the standard padding. */
 export function GroupBody({ className, children }: { className?: string; children: ReactNode }) {
   return <div className={cn("p-4 sm:p-5", className)}>{children}</div>;

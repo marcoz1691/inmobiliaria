@@ -1,6 +1,10 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ActionResult } from "@/lib/errors";
+import { cn } from "@/components/ui/cn";
+import { Spinner } from "../ui/Button";
+import { Icon } from "../ui/Icon";
+import { ease } from "../ui/motion";
 
 export type SaveState = "idle" | "saving" | "saved" | "offline" | "error";
 
@@ -133,14 +137,18 @@ export function SaveStatus({ state, error }: { state: SaveState; error: string |
     offline: "Sin conexión, reintentando…",
     error: error ?? "No se pudo guardar",
   };
-  const tone = state === "error" ? "text-sold" : state === "offline" ? "text-reserved" : "text-ink-muted";
+  const tone =
+    state === "error" ? "bg-sold-bg text-sold" : state === "offline" ? "bg-reserved-bg text-reserved" : state === "saved" ? "bg-available-bg text-available" : "bg-ink/[0.05] text-ink-muted";
   return (
-    <p role="status" aria-live="polite" className={`flex items-center gap-1.5 text-sm ${tone}`}>
-      <span
-        aria-hidden="true"
-        className={`size-2 rounded-full ${state === "saved" ? "bg-available" : state === "error" ? "bg-sold" : state === "offline" ? "bg-reserved" : "bg-line-strong"}`}
-      />
-      {text[state]}
+    <p role="status" aria-live="polite" className={cn("inline-flex min-h-8 max-w-[60vw] items-center gap-1.5 rounded-full px-3 text-[0.8125rem] font-medium transition-colors duration-300", ease, tone)}>
+      {state === "saving" ? (
+        <Spinner />
+      ) : state === "saved" ? (
+        <Icon name="check" className="size-3.5 shrink-0" strokeWidth={2.6} />
+      ) : state === "idle" ? null : (
+        <Icon name="alert" className="size-3.5 shrink-0" strokeWidth={2.2} />
+      )}
+      <span className="truncate">{text[state]}</span>
     </p>
   );
 }

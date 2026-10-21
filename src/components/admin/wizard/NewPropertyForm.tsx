@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
-import { Button } from "@/components/ui/Button";
+import { cn } from "@/components/ui/cn";
+import { Button } from "../ui/Button";
+import { Icon } from "../ui/Icon";
 import { createPropertyAction } from "@/app/panel/(app)/propiedades/actions";
 import { BasicsFields } from "./FormSteps";
 import { fieldToPatch, STEPS, type FieldName, type FormState } from "./model";
@@ -80,23 +82,29 @@ export function NewPropertyForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} noValidate className="mt-6">
-      <p className="text-sm text-ink-muted">
+    <form onSubmit={onSubmit} noValidate className="mt-2">
+      <p className="text-[0.9375rem] text-ink-muted">
         Paso 1 de {STEPS.length}: {STEPS[0].label}. Después agregas fotos y detalles; todo se guarda solo.
       </p>
-      <div className="mt-2 h-1 overflow-hidden rounded-full bg-sand" aria-hidden="true">
-        <div className="h-full w-1/4 bg-navy" />
-      </div>
+      <ol aria-hidden="true" className="mt-3 grid grid-cols-4 gap-1.5">
+        {STEPS.map((s, i) => (
+          <li key={s.key} className="min-w-0">
+            <span className={cn("block h-1 rounded-full", i === 0 ? "bg-navy" : "bg-ink/10")} />
+            <span className={cn("mt-1.5 block truncate text-xs font-medium", i === 0 ? "text-navy" : "text-ink-muted")}>{s.label}</span>
+          </li>
+        ))}
+      </ol>
       <div className="mt-6">
         <BasicsFields form={form} set={set} errors={errors} verify={() => false} />
       </div>
       {error ? (
-        <p role="alert" className="mt-4 text-sm font-medium text-sold">
+        <p role="alert" className="mt-4 flex items-center gap-1.5 text-sm font-medium text-sold">
+          <Icon name="alert" className="size-4 shrink-0" strokeWidth={2} />
           {error}
         </p>
       ) : null}
-      <div className="mt-8 flex justify-end border-t border-line pt-6">
-        <Button type="submit" size="lg" disabled={pending} className="w-full sm:w-auto">
+      <div className="mt-8 flex justify-end">
+        <Button type="submit" size="lg" pending={pending} className="w-full sm:w-auto">
           {pending ? "Creando borrador…" : "Siguiente: Fotos"}
         </Button>
       </div>
