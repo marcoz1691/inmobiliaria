@@ -1,4 +1,4 @@
-import { scrubText, type ScrubContext } from "./text";
+import { escapeRe, scrubText, type ScrubContext } from "./text";
 import type { Confidence, ExtractedListing, ListingField } from "./types";
 
 export const LISTING_FIELDS: ListingField[] = [
@@ -75,6 +75,12 @@ export function finalizeListing(l: ExtractedListing, ctx: ScrubContext): Extract
   l.city = scrubText(l.city, ctx);
   l.highlights = dedupe(l.highlights.map((h) => scrubText(h, ctx)).filter((h): h is string => !!h));
   l.amenities = dedupe(l.amenities);
+  // The address is private; the description is public.
+  const addressRe = l.address ? new RegExp(escapeRe(l.address), "giu") : null;
+  if (addressRe && l.description && addressRe.test(l.description)) {
+    l.description = scrubText(l.description.replace(addressRe, " ").replace(/^[\s.,;:]+/, ""), { names: [], codes: [] });
+    l.confidence.description = "low";
+  }
 
   for (const f of LISTING_FIELDS) {
     if (f === "priceKind") continue;

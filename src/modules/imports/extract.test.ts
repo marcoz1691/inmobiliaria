@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import { beforeAll, describe, expect, it } from "vitest";
 import { extractFromPdf, parsePages, RESULT_WARNINGS } from "./extract";
-import { WARN } from "./listing";
+import { emptyListing, finalizeListing, setField, WARN } from "./listing";
 import type { ExtractedListing, ExtractionResult } from "./types";
 
 const PDF_DIR = process.env.IMPORT_PDF_DIR ?? "/Users/marquinho/inmobiliaria/assets-input/pdfs";
@@ -203,6 +203,23 @@ describe.skipIf(!hasPdfs)("extractFromPdf — real PDFs", () => {
     expect(r.warnings.join(" ")).toMatch(/Página 11/);
   });
 
+  it("no description repeats its (private) address", () => {
+    const all = [...FICHAS.map((f) => one(f)), ...get(CATALOG).listings];
+    for (const l of all) {
+      if (!l.address || !l.description) continue;
+      const where = `p${l.sourcePages.join(",")} ${l.title}`;
+      expect(l.description.toLowerCase(), where).not.toContain(l.address.toLowerCase());
+      // Not even its first clause ("Lote # 3", "Calle 7 entre Av. 4 y Av. 6").
+      const firstClause = l.address.split(",")[0]!.trim();
+      if (firstClause.length >= 8) expect(l.description.toLowerCase(), where).not.toContain(firstClause.toLowerCase());
+    }
+    const santaLucia = get(CATALOG).listings.find((l) => l.sourcePages.includes(6))!;
+    expect(santaLucia.address).toBe("Lote # 3, barrio Santa Lucia, calle Chimborazo y Pasaje González.");
+    expect(santaLucia.description).toBe("Área de Terreno: 5.418,91 m2 y construcción interna tipo vivienda de 2 plantas de 216,00 m2.");
+    expect(santaLucia.confidence.description).toBe("low");
+    expect(santaLucia.landArea).toBe(5418.91);
+  });
+
   it("brochure of floor plans yields no listings and a warning", () => {
     const r = get(BROCHURE);
     expect(r.listings).toHaveLength(0);
@@ -233,5 +250,31 @@ describe("parsePages", () => {
     }
     expect(l!.excluded.cadastralCode).toBe(true);
     expect(JSON.stringify(l)).not.toContain("0912345678");
+  });
+
+  it("keeps catalogue address lines out of the public description", () => {
+    const page = (city: string, street: string) =>
+      `DIRECCIÓN: ${city}\n${street}\nÁrea de Terreno: 500 m2 y construcción de 120,00 m2.\nVALOR AVALUO\n$80.000,00`;
+    const r = parsePages([
+      page("CUMBAYÁ", "Lote # 3, barrio Santa Lucia, calle Chimborazo y Pasaje González."),
+      page("MANTA", "Calle 7 entre Av. 4 y Av. 6, edificio Los Andes."),
+    ]);
+    expect(r.listings).toHaveLength(2);
+    for (const l of r.listings) {
+      expect(l.address).toBeTruthy();
+      expect(l.description).toBe("Área de Terreno: 500 m2 y construcción de 120,00 m2.");
+      expect(l.confidence.description).toBe("low");
+    }
+  });
+});
+
+describe("finalizeListing", () => {
+  it("strips the address from a description that repeats it", () => {
+    const l = emptyListing();
+    setField(l, "address", "Av. Galo Plaza Lasso 8721 y José Rafael Bustamante", "high");
+    setField(l, "description", "AV. GALO PLAZA LASSO 8721 Y JOSÉ RAFAEL BUSTAMANTE. Casa de 2 plantas.", "high");
+    const out = finalizeListing(l, { names: [], codes: [] });
+    expect(out.description).toBe("Casa de 2 plantas.");
+    expect(out.confidence.description).toBe("low");
   });
 });
