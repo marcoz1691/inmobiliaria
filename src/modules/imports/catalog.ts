@@ -286,13 +286,15 @@ function buildListing(
   }
 
   /* ── Address & description ── */
+  // The address is private (approximate location by default), so its lines never reach
+  // the public description; what is left is a raw fragment of the PDF, hence "low".
   const addressLines: string[] = [];
   for (const x of desc) {
     if (ADDRESS_STOP.test(x)) break;
     addressLines.push(x);
   }
   setField(l, "address", collapseSpaces(addressLines.join(" ")) || null, "low");
-  setField(l, "description", text || null, "high");
+  setField(l, "description", collapseSpaces(desc.slice(addressLines.length).join(" ")) || null, "low");
 
   /* ── Highlights: bullets and standalone parentheticals ── */
   const highlights: string[] = [];

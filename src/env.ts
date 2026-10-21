@@ -22,6 +22,8 @@ const schema = z.object({
   SUPABASE_URL: optional,
   SUPABASE_SERVICE_ROLE_KEY: optional,
   SUPABASE_STORAGE_BUCKET: z.string().default("media"),
+  /** Private bucket (no public access) for imported source PDFs; read with the service-role key. */
+  SUPABASE_PRIVATE_BUCKET: z.string().default("private"),
 
   /** 32-byte key (base64) used to encrypt third-party OAuth tokens at rest. */
   ENCRYPTION_KEY: optional,
@@ -56,6 +58,9 @@ function load(): Env {
     throw new Error(`Invalid environment variables: ${issues}`);
   }
   const env = parsed.data;
+  if (env.SUPABASE_PRIVATE_BUCKET === env.SUPABASE_STORAGE_BUCKET) {
+    throw new Error("Invalid environment variables: SUPABASE_PRIVATE_BUCKET must differ from the public SUPABASE_STORAGE_BUCKET");
+  }
   if (env.NODE_ENV === "production" && process.env.NEXT_PHASE !== "phase-production-build") {
     const missing = (["DATABASE_URL", "BETTER_AUTH_SECRET", "SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ENCRYPTION_KEY"] as const).filter(
       (k) => !env[k],
