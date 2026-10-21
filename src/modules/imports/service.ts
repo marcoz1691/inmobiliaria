@@ -1,4 +1,5 @@
 import "server-only";
+import { randomUUID } from "node:crypto";
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
 import { withTenant, type Tx } from "@/server/db/tenant-tx";
@@ -7,9 +8,8 @@ import type { MemberContext } from "@/server/session";
 import { AppError, notFound } from "@/lib/errors";
 import { sha256 } from "@/lib/crypto";
 import { errorInfo, log } from "@/lib/logger";
-import { integrations } from "@/env";
 import { audit } from "@/modules/audit/audit";
-import { getStorage, readLocal } from "@/modules/media/storage";
+import { getPrivateStorage, getStorage } from "@/modules/media/storage";
 import { addPhoto, createImportedDraft, listByImport, listDedupeCandidates } from "@/modules/properties/service";
 import { extractFromPdf } from "./extract";
 import { extractPdfImages } from "./images";
@@ -98,8 +98,8 @@ export async function importPdf(m: MemberContext, fileName: string, data: Buffer
   );
   if (existing[0]) return { kind: "already_imported", importId: existing[0].id, fileName: existing[0].fileName };
 
-  const storageKey = `tenants/${m.tenantId}/imports/${sha}.pdf`;
-  await getStorage().put(storageKey, data, "application/pdf");
+  const storageKey = newPdfKey(m.tenantId);
+  await getPrivateStorage().put(storageKey, data, "application/pdf");
 
   const inserted = await run(m.tenantId, async (tx) => {
     const rows = await tx
@@ -112,6 +112,7 @@ export async function importPdf(m: MemberContext, fileName: string, data: Buffer
   });
   if (!inserted) {
     // Lost a race with a concurrent upload of the same file.
+    await getPrivateStorage().remove([storageKey]).catch(() => undefined);
     const [row] = await run(m.tenantId, (tx) =>
       tx.select({ id: imports.id, fileName: imports.fileName }).from(imports).where(and(eq(imports.tenantId, m.tenantId), eq(imports.fileSha256, sha))),
     );
@@ -218,14 +219,40 @@ export async function getImport(m: MemberContext, id: string) {
   return { import: { ...row, extractedText: null }, listings, drafts, needsOcr: row.error === NEEDS_OCR_MESSAGE };
 }
 
+/**
+ * Source PDFs hold boundaries, cadastral codes and bank contacts: they live in private storage
+ * under a random key, so knowing the file (its SHA-256) does not reveal where it is stored.
+ */
+function newPdfKey(tenantId: string): string {
+  return `tenants/${tenantId}/imports/${randomUUID()}.pdf`;
+}
+
+/** Imports made before private storage kept the PDF in the public media storage, keyed by its SHA-256. */
+const LEGACY_PDF_KEY = /^tenants\/[0-9a-f-]{36}\/imports\/[0-9a-f]{64}\.pdf$/;
+
 /** Raw PDF for the authenticated panel route. */
 export async function readImportPdf(m: MemberContext, id: string): Promise<{ body: Buffer; fileName: string }> {
   const { import: row } = await getImport(m, id);
-  if (!row.storageKey) throw notFound("Archivo");
-  if (integrations.supabaseStorage) {
-    const res = await fetch(getStorage().url(row.storageKey));
-    if (!res.ok) throw notFound("Archivo");
-    return { body: Buffer.from(await res.arrayBuffer()), fileName: row.fileName };
-  }
-  return { body: await readLocal(row.storageKey), fileName: row.fileName };
+  if (!row.storageKey?.startsWith(`tenants/${m.tenantId}/imports/`)) throw notFound("Archivo");
+  const body =
+    (await getPrivateStorage().get(row.storageKey)) ??
+    (LEGACY_PDF_KEY.test(row.storageKey) ? await relocateLegacyPdf(m.tenantId, row.id, row.storageKey) : null);
+  if (!body) throw notFound("Archivo");
+  return { body, fileName: row.fileName };
+}
+
+/** Moves a legacy PDF out of public storage on first read (read via the authenticated API, not its URL). */
+async function relocateLegacyPdf(tenantId: string, importId: string, legacyKey: string): Promise<Buffer | null> {
+  const body = await getStorage().get(legacyKey);
+  if (!body) return null;
+  const key = newPdfKey(tenantId);
+  await getPrivateStorage().put(key, body, "application/pdf");
+  await run(tenantId, (tx) =>
+    tx.update(imports).set({ storageKey: key }).where(and(eq(imports.tenantId, tenantId), eq(imports.id, importId))),
+  );
+  await getStorage()
+    .remove([legacyKey])
+    .catch((err) => log.warn("legacy import pdf not removed", { importId, ...errorInfo(err) }));
+  log.info("import pdf moved to private storage", { importId });
+  return body;
 }

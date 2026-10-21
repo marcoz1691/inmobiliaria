@@ -5,8 +5,11 @@
 2. **Database → Connection string → Transaction pooler** (puerto 6543): ese es el `DATABASE_URL`.
    - El rol `postgres` es dueño de las tablas.
    - La migración `0000_roles.sql` crea `app_user` y se lo concede, para que la app pueda hacer `SET LOCAL ROLE app_user` y aplicar RLS.
-3. **Storage → New bucket** `media`, **público** (solo contiene fotos optimizadas sin metadatos y los PDFs importados).
-   - Si prefieres mantener los PDFs privados, crea un bucket `imports` privado y ajusta `src/modules/imports/service.ts`.
+3. **Storage**: crea dos buckets.
+   - `media`, **público** (`SUPABASE_STORAGE_BUCKET`): solo fotos optimizadas sin metadatos (propiedades y agente).
+   - `private`, **privado** (`SUPABASE_PRIVATE_BUCKET`; deja "Public bucket" desactivado y no le agregues políticas para `anon` ni `authenticated`): los PDF originales importados. Tienen linderos, códigos catastrales y contactos de bancos, así que nunca deben tener URL pública. La app los guarda con una clave aleatoria y los lee con la `service_role` desde la ruta autenticada del panel (`/api/panel/imports/<id>/pdf`).
+   - Los dos nombres deben ser distintos; la app no arranca si coinciden.
+   - **Si ya importaste PDFs antes de este cambio**, están en `media/tenants/<id>/imports/<sha256>.pdf`. Al abrir cada importación en el panel, el PDF se mueve solo al bucket privado y se borra del público. Para no esperar a eso, borra esa carpeta del bucket `media` (los borradores ya creados no dependen del PDF; solo se pierde la vista del original).
 4. **Project settings → API**: copia `SUPABASE_URL` y la `service_role` key en `SUPABASE_SERVICE_ROLE_KEY`. Solo se usa en el servidor; nunca va al cliente.
 5. Aplica las migraciones desde tu máquina:
    ```bash
@@ -28,6 +31,7 @@
 2. Variables de entorno (Production y Preview): todas las de `.env.example` que apliquen. Como mínimo:
    - `APP_URL`, `DEFAULT_TENANT_SLUG`
    - `DATABASE_URL`, `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_STORAGE_BUCKET` y `SUPABASE_PRIVATE_BUCKET` solo si tus buckets no se llaman `media` y `private`
    - `BETTER_AUTH_SECRET` y `ENCRYPTION_KEY` (genéralos con `openssl rand -base64 32`)
    - `CRON_SECRET` (`openssl rand -hex 24`)
 3. `vercel.json` programa `/api/cron/jobs` cada 5 minutos (recordatorios, mensajes, Conversions API, calendario). Vercel envía `Authorization: Bearer $CRON_SECRET`.

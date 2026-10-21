@@ -6,7 +6,7 @@ import { makePdf } from "../../../../test/pdf";
 import type { Db } from "@/server/db/create";
 import { imports, user } from "@/server/db/schema";
 import type { MemberContext } from "@/server/session";
-import { readLocal } from "@/modules/media/storage";
+import { getPrivateStorage } from "@/modules/media/storage";
 import { setProfilePhoto } from "@/modules/agents/admin";
 import * as props from "@/modules/properties/service";
 import { importPdf, MAX_PDF_BYTES } from "@/modules/imports/service";
@@ -256,7 +256,7 @@ describe("panel route handlers", () => {
       const r = await importPdf(mA, "privado.pdf", makePdf(["CASA PRIVADA - QUITO", "LINDEROS\nAl norte: Lote 4"]));
       const [row] = await db.select().from(imports).where(eq(imports.id, r.importId));
       const key = row!.storageKey!;
-      expect((await readLocal(key)).subarray(0, 5).toString()).toBe("%PDF-");
+      expect((await getPrivateStorage().get(key))?.subarray(0, 5).toString()).toBe("%PDF-");
       expect((await get(key.split("/"))).status).toBe(404);
       // Same object under another spelling of the path.
       expect((await get(["tenants", mA.tenantId, "properties", "..", "imports", key.split("/").pop()!]))).toMatchObject({ status: 404 });
