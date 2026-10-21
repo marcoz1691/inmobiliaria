@@ -1,8 +1,10 @@
 "use client";
-import { useId, useRef, useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { moveDealAction } from "@/app/panel/(app)/prospectos/actions";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/admin/ui/Button";
+import { Sheet } from "@/components/admin/ui/Sheet";
+import { useToast } from "@/components/admin/ui/Toast";
 import { inputClass, selectClass } from "./fields";
 
 export type StageOption = { value: string; label: string };
@@ -12,8 +14,9 @@ export function StageSelect({ dealId, stage, stages, contactName, compact }: { d
   const label = (v: string) => stages.find((s) => s.value === v)?.label ?? v;
   const id = useId();
   const router = useRouter();
-  const dialog = useRef<HTMLDialogElement>(null);
+  const toast = useToast();
   const [value, setValue] = useState(stage);
+  const [lostOpen, setLostOpen] = useState(false);
   const [reason, setReason] = useState("");
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
   const [pending, start] = useTransition();
@@ -24,7 +27,8 @@ export function StageSelect({ dealId, stage, stages, contactName, compact }: { d
       if (r.ok) {
         setValue(next);
         setMsg({ text: `Movido a «${label(next)}».` });
-        dialog.current?.close();
+        setLostOpen(false);
+        toast.success(`Movido a «${label(next)}».`);
         router.refresh();
       } else setMsg({ text: r.error, error: true });
     });
@@ -44,7 +48,8 @@ export function StageSelect({ dealId, stage, stages, contactName, compact }: { d
           const next = e.target.value;
           if (next === "lost") {
             setReason("");
-            dialog.current?.showModal();
+            setMsg(null);
+            setLostOpen(true);
             return;
           }
           commit(next);
@@ -56,34 +61,41 @@ export function StageSelect({ dealId, stage, stages, contactName, compact }: { d
           </option>
         ))}
       </select>
-      <p role="status" className={msg?.error ? "mt-1 text-sm text-sold" : "mt-1 text-sm text-ink-muted empty:hidden"}>
+      <p role="status" className={msg?.error ? "mt-1 text-sm font-medium text-sold" : "mt-1 text-sm text-ink-muted empty:hidden"}>
         {msg?.text}
       </p>
-      <dialog ref={dialog} aria-labelledby={`${id}-t`} className="m-auto w-[min(28rem,calc(100vw-2rem))] rounded-md border border-line bg-paper p-0 text-ink backdrop:bg-ink/50">
+      <Sheet
+        open={lostOpen}
+        onClose={() => setLostOpen(false)}
+        title="¿Por qué se perdió?"
+        description={`Vas a marcar a ${contactName} como perdido. El motivo queda en el historial.`}
+      >
         <form
-          className="p-6"
+          className="mt-4"
           onSubmit={(e) => {
             e.preventDefault();
             commit("lost", reason.trim());
           }}
         >
-          <h2 id={`${id}-t`} className="font-display text-2xl">
-            ¿Por qué se perdió?
-          </h2>
-          <label htmlFor={`${id}-r`} className="mt-3 block text-sm font-medium">
+          <label htmlFor={`${id}-r`} className="block text-sm font-medium">
             Motivo
           </label>
           <input id={`${id}-r`} required value={reason} maxLength={300} onChange={(e) => setReason(e.target.value)} className={inputClass} placeholder="Ej.: compró con otro agente" />
+          {msg?.error ? (
+            <p role="alert" className="mt-2 text-sm font-medium text-sold">
+              {msg.text}
+            </p>
+          ) : null}
           <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" onClick={() => dialog.current?.close()}>
+            <Button variant="gray" size="lg" className="sm:min-h-11 sm:px-5 sm:text-[0.9375rem]" onClick={() => setLostOpen(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending || !reason.trim()}>
+            <Button type="submit" size="lg" className="sm:min-h-11 sm:px-5 sm:text-[0.9375rem]" pending={pending} disabled={!reason.trim()}>
               Marcar como perdido
             </Button>
           </div>
         </form>
-      </dialog>
+      </Sheet>
     </div>
   );
 }

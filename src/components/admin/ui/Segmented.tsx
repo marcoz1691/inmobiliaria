@@ -53,7 +53,24 @@ function Badge({ n, active }: { n?: number; active: boolean }) {
  * Segmented control as an ARIA tablist (arrow keys move and select, Home/End jump).
  * Pair each option with a `role="tabpanel"` whose id is `${idBase}-panel-${value}`.
  */
-export function SegmentedTabs({ options, value, onChange, label, idBase, className }: { options: SegmentOption[]; value: string; onChange: (v: string) => void; label: string; idBase: string; className?: string }) {
+export function SegmentedTabs({
+  options,
+  value,
+  onChange,
+  label,
+  idBase,
+  className,
+  /** Horizontal scroll when labels do not fit (e.g. CRM stages). */
+  scroll,
+}: {
+  options: SegmentOption[];
+  value: string;
+  onChange: (v: string) => void;
+  label: string;
+  idBase: string;
+  className?: string;
+  scroll?: boolean;
+}) {
   const { track, box } = useThumb(value);
   function onKey(e: KeyboardEvent, i: number) {
     const last = options.length - 1;
@@ -63,8 +80,8 @@ export function SegmentedTabs({ options, value, onChange, label, idBase, classNa
     onChange(options[next]!.value);
     track.current?.querySelector<HTMLElement>(`[data-segment="${CSS.escape(options[next]!.value)}"]`)?.focus();
   }
-  return (
-    <div ref={track} role="tablist" aria-label={label} className={cn(trackClass, className)}>
+  const list = (
+    <div ref={track} role="tablist" aria-label={label} className={cn(trackClass, scroll && "max-w-none", className)}>
       <Thumb box={box} />
       {options.map((o, i) => (
         <button
@@ -78,7 +95,7 @@ export function SegmentedTabs({ options, value, onChange, label, idBase, classNa
           tabIndex={o.value === value ? 0 : -1}
           onClick={() => onChange(o.value)}
           onKeyDown={(e) => onKey(e, i)}
-          className={segmentClass}
+          className={cn(segmentClass, scroll && "flex-none")}
         >
           {o.label}
           {o.srLabel ? <span className="sr-only">{o.srLabel}</span> : null}
@@ -87,6 +104,7 @@ export function SegmentedTabs({ options, value, onChange, label, idBase, classNa
       ))}
     </div>
   );
+  return scroll ? <div className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">{list}</div> : list;
 }
 
 /**

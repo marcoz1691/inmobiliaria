@@ -1,7 +1,10 @@
 "use client";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { cn } from "@/components/ui/cn";
+import { EmptyState } from "@/components/admin/ui/EmptyState";
+import { ListGroup, card } from "@/components/admin/ui/ListGroup";
+import { SegmentedTabs } from "@/components/admin/ui/Segmented";
 import { StageSelect, type StageOption } from "./StageSelect";
 
 export type DealCard = {
@@ -18,7 +21,7 @@ const date = new Intl.DateTimeFormat("es-EC", { day: "numeric", month: "short", 
 
 function Card({ d, stages }: { d: DealCard; stages: StageOption[] }) {
   return (
-    <article className="rounded-sm border border-line bg-white p-3">
+    <article className={cn(card, "p-3.5")}>
       <h3 className="text-base font-medium text-ink">
         <Link href={`/panel/prospectos/${d.id}`} className="underline-offset-4 hover:underline">
           {d.name}
@@ -38,60 +41,44 @@ function Card({ d, stages }: { d: DealCard; stages: StageOption[] }) {
 export function DealBoard({ deals, stages }: { deals: DealCard[]; stages: StageOption[] }) {
   const firstWithDeals = stages.find((s) => deals.some((d) => d.stage === s.value))?.value ?? stages[0]!.value;
   const [tab, setTab] = useState(firstWithDeals);
-  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const byStage = (s: string) => deals.filter((d) => d.stage === s);
-
-  function onKey(e: React.KeyboardEvent, i: number) {
-    const last = stages.length - 1;
-    const next = e.key === "ArrowRight" ? (i === last ? 0 : i + 1) : e.key === "ArrowLeft" ? (i === 0 ? last : i - 1) : e.key === "Home" ? 0 : e.key === "End" ? last : null;
-    if (next === null) return;
-    e.preventDefault();
-    setTab(stages[next]!.value);
-    tabs.current[next]?.focus();
-  }
 
   return (
     <>
       <div className="md:hidden">
-        <div role="tablist" aria-label="Etapas" className="no-scrollbar -mx-5 flex gap-1 overflow-x-auto px-5">
-          {stages.map((s, i) => (
-            <button
-              key={s.value}
-              ref={(el) => {
-                tabs.current[i] = el;
-              }}
-              role="tab"
-              id={`tab-${s.value}`}
-              aria-selected={tab === s.value}
-              aria-controls={`panel-${s.value}`}
-              tabIndex={tab === s.value ? 0 : -1}
-              onClick={() => setTab(s.value)}
-              onKeyDown={(e) => onKey(e, i)}
-              className={cn("min-h-11 shrink-0 rounded-full px-4 text-sm whitespace-nowrap", tab === s.value ? "bg-ink text-paper" : "border border-line-strong text-ink")}
-            >
-              {s.label} <span className={tab === s.value ? "text-paper-muted" : "text-ink-muted"}>{byStage(s.value).length}</span>
-            </button>
-          ))}
-        </div>
+        <SegmentedTabs
+          scroll
+          label="Etapas"
+          idBase="etapas"
+          value={tab}
+          onChange={setTab}
+          options={stages.map((s) => ({ value: s.value, label: s.label, badge: byStage(s.value).length }))}
+        />
         {stages
           .filter((s) => s.value === tab)
-          .map((s) => (
-            <div key={s.value} role="tabpanel" id={`panel-${s.value}`} aria-labelledby={`tab-${s.value}`} tabIndex={0} className="mt-4 space-y-3">
-              {byStage(s.value).length ? byStage(s.value).map((d) => <Card key={d.id} d={d} stages={stages} />) : <p className="text-sm text-ink-muted">No hay prospectos en esta etapa.</p>}
-            </div>
-          ))}
+          .map((s) => {
+            const list = byStage(s.value);
+            return (
+              <div key={s.value} role="tabpanel" id={`etapas-panel-${s.value}`} aria-labelledby={`etapas-tab-${s.value}`} tabIndex={0} className="mt-4 grid gap-3">
+                {list.length ? (
+                  list.map((d) => <Card key={d.id} d={d} stages={stages} />)
+                ) : (
+                  <EmptyState bare icon="people" title="No hay prospectos en esta etapa." headingLevel={3} className="py-8" />
+                )}
+              </div>
+            );
+          })}
       </div>
 
       <div className="hidden gap-3 overflow-x-auto pb-4 md:flex">
         {stages.map((s) => {
           const list = byStage(s.value);
           return (
-            <section key={s.value} aria-labelledby={`col-${s.value}`} className="w-64 shrink-0 border-t-2 border-ink pt-3">
-              <h2 id={`col-${s.value}`} className="flex items-baseline justify-between text-sm font-medium text-ink">
-                {s.label} <span className="text-ink-muted">{list.length}</span>
-              </h2>
-              <div className="mt-3 space-y-3">{list.length ? list.map((d) => <Card key={d.id} d={d} stages={stages} />) : <p className="text-sm text-ink-muted">Vacío</p>}</div>
-            </section>
+            <ListGroup key={s.value} as="div" className="w-[17.5rem] shrink-0" title={s.label} titleId={`col-${s.value}`} action={<span className="pr-1 text-sm font-semibold text-ink-muted tabular-nums">{list.length}</span>}>
+              <div className="grid gap-2 p-2">
+                {list.length ? list.map((d) => <Card key={d.id} d={d} stages={stages} />) : <p className="px-3 py-4 text-sm text-ink-muted">Vacío</p>}
+              </div>
+            </ListGroup>
           );
         })}
       </div>
