@@ -1,10 +1,11 @@
 # QA exploratorio — 2026-10-20
 
 - **Rama:** `r3/qa` (snapshot de `main` en `7fbe338`).
-- **Entorno:** `next dev -p 3305`, PGlite propio (`.data/pglite-qa`), seed con `SEED_E2E_FIXTURES=1`, sin credenciales de integraciones.
-- **Herramientas:** Playwright (Chromium, 1440 px) con scripts en `qa-scripts/`, más `curl` para las requests HTTP directas.
-- **Evidencia:** capturas en `qa-scripts/shots/` y volcados en `qa-scripts/drafts/` (no se commitean).
-- **Limitación del entorno:** el servidor de desarrollo fue muy lento. El primer render de cada ruta tardó entre 2 y 6 min, y el proceso se cayó dos veces durante la sesión. Por eso la cobertura de embudo, agenda, prospectos, móvil y a11y quedó **pendiente** (ver "No cubierto").
+- **Entorno (sesión 1):** `next dev -p 3305`, PGlite `.data/pglite-qa`.
+- **Entorno (sesión 2, continuación):** `next dev -p 3307`, PGlite `.data/pglite-qa2`, seed con `SEED_E2E_FIXTURES=1` y un segundo tenant (`otro`) solo para IDOR. Sin credenciales de integraciones. No se relanzó la importación masiva de PDFs.
+- **Herramientas:** Playwright (Chromium) y `curl`/`urllib` contra `http://localhost:3307`. Scripts en `qa-scripts/` (no se commitean).
+- **Evidencia:** capturas en `qa-scripts/shots/` y volcados en `qa-scripts/drafts/`.
+- **Limitación del entorno:** el `next dev` sigue lento (primera compilación de una ruta 10 s–4 min). No se mató ni recreó el servidor de la sesión 2. Los P0 QA-01 y QA-02 se dieron por corregidos en `main` (otra rama); aquí solo smoke de QA-01.
 
 ## Resumen de bugs
 
@@ -19,6 +20,7 @@
 | QA-07 | P3 | Importación / copy | Un PDF sin fichas reconocibles solo dice "No se encontraron propiedades", sin indicar qué hacer |
 | QA-08 | P3 | Importación / copy | El rechazo del `.pptx` es correcto, pero no sugiere exportarlo a PDF |
 | QA-09 | P3 | SEO / multi-tenant | `siteOrigin` usa `x-forwarded-host` y el tenant usa `host`: canonical, OG y sitemap pueden divergir detrás de un proxy |
+| QA-10 | P1 | Seguridad / ingreso | El formulario de ingreso no declara `method="post"`: sin JS hidratado el navegador manda correo y contraseña en la URL |
 
 ---
 
@@ -123,6 +125,30 @@ La ficha con ubicación aproximada dice "La dirección exacta se comparte al age
 
 `src/app/(public)/_lib/site.ts:14` arma canonical, OG, sitemap y `robots` con `x-forwarded-host ?? host`, mientras que `getCurrentTenant` (`src/server/tenant.ts`) usa solo `host`. Detrás de un proxy que reenvíe un `X-Forwarded-Host` del cliente, el sitemap de un tenant podría anunciar URLs de otro dominio. En Vercel la cabecera la fija la plataforma: riesgo bajo, pero conviene usar la misma fuente.
 
+## QA-10 · P1 · Ingreso por GET: correo y contraseña en la URL
+
+**Área:** seguridad, panel de ingreso.
+
+**Pasos:**
+1. Abre `/panel/ingresar` y espera lo mínimo (o desactiva JS).
+2. Llena Correo y Contraseña y pulsa Ingresar (o Enter) antes de que hidrate el cliente.
+
+**Esperado:** `POST` al endpoint de sesión. La contraseña nunca viaja en query string ni queda en el historial, logs de access o Referer.
+
+**Obtenido:** el `<form>` de `LoginForm` no tiene `method="post"` ni `action`. El `onSubmit` hace `preventDefault` solo cuando el JS ya corrió. En esta sesión, Playwright contra `127.0.0.1:3307` (el HMR de Next bloquea ese origen) provocó un envío nativo:
+
+```
+GET /panel/ingresar?email=qa%40piloto.test&password=…
+```
+
+El servidor de desarrollo lo registró en claro. En producción pasaría a access logs, historial del navegador y, si hay un `Referer` posterior, a terceros.
+
+**Causa probable:** `src/app/panel/ingresar/LoginForm.tsx` — `<form onSubmit={onSubmit}>` sin `method="post"`.
+
+**Sugerencia:** `method="post" action="#"` (o `action="/api/auth/sign-in/email"`) para que un submit nativo no ponga secretos en la URL, aunque el JS tarde o falle.
+
+**Nota:** el ingreso por `POST /api/auth/sign-in/email` con JSON sí funciona (200 + cookie).
+
 ---
 
 ## Cobertura: probado y correcto
@@ -155,6 +181,14 @@ La ficha con ubicación aproximada dice "La dirección exacta se comparte al age
 
 **Medios:** `processImage` valida por contenido con sharp y reencoda a WebP sin `withMetadata`, así que se eliminan EXIF y GPS. Revisado en código; falta subir una foto con GPS real (ver abajo).
 
+**Seguridad (sesión 2, puerto 3307)**
+- Smoke QA-01 en *esta* rama: un PDF de prueba en `.data/media/tenants/<piloto>/imports/<sha>.pdf` sigue sirviéndose `200 application/pdf` sin sesión. El arreglo de `main` no está en `r3/qa`. No se reabrió como bug nuevo.
+- Path traversal `/media/../.data/dev-secret`, `%2e%2e`, `tenants/x/../../` → 404. No se filtró el secreto.
+- `/api/cron/jobs` sin secreto, `Bearer ` vacío y `Bearer undefined` → 401.
+- `/api/webhooks/meta` GET/POST sin credenciales → 503 "Webhook de Meta no configurado".
+- `/cita/<token inválido>` y `/cita/.../ics` → 404. Tokens de 32 `A` y 64 `0` → 404. `GET /cita/../panel` sin seguir redirección → 307 a `/panel/ingresar` (normalización de ruta, no IDOR).
+- IDOR (sesión de `qa@piloto.test`, ids del tenant `otro`): `GET /panel/propiedades/<id ajeno>` 404 (el HTML no contiene el título ajeno); `GET /panel/prospectos/<id ajeno>` 404; `GET /panel/importar/<id ajeno>` 404; `GET /api/panel/imports/<id ajeno>/pdf` 404 "No encontrado"; `POST /api/panel/properties/<id ajeno>/photos` con JPEG mínimo → 404 "Propiedad no encontrado". UUID cero → 404.
+
 ## No cubierto en esta sesión (pendiente)
 
 Lo dejo explícito para que el orquestador lo reasigne o lo cubra el SDET con e2e:
@@ -162,7 +196,7 @@ Lo dejo explícito para que el orquestador lo reasigne o lo cubra el SDET con e2
 2. **Prospectos:** mover etapa, notas, tareas, motivo de pérdida. **Perfil:** foto, redes, WhatsApp y su reflejo en el sitio.
 3. **Asistente:** autosave con red caída, validaciones numéricas en la UI, duplicar/pausar/archivar, reordenar fotos y cambiar portada.
 4. **Subidas:** foto con EXIF/GPS (verificar con `exiftool` la variante 1600), tipo falso, >15 MB.
-5. **IDOR entre tenants** (requiere un segundo tenant y dominio en el seed), rate limit del chat (30/10 min por IP), opt-out completo (GET de confirmación + POST).
+5. **Rate limit del chat** (30/10 min por IP), opt-out completo (GET de confirmación + POST). IDOR de URLs del panel: cubierto en sesión 2. Falta IDOR de *server actions* del panel (mover etapa / guardar borrador) con id ajeno, y un segundo *dominio* (Host) para el tenant `otro`.
 6. **Móvil (Pixel 7) y a11y:** teclado, foco, tab bar, objetivos táctiles. Lo cubre en parte el SDET con axe.
 7. **Rate limit de login:** desactivado fuera de producción por diseño (`src/server/auth.ts`). Hay que probarlo en un preview.
 8. **Mensaje de contraseña incorrecta:** a los 4 s el botón seguía en "Ingresando…" (`qa-scripts/shots/01-login-wrong.png`). No pude confirmar si luego aparece un error, por la lentitud del servidor. Volver a probar con más espera.
