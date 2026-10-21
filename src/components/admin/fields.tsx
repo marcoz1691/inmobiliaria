@@ -4,16 +4,12 @@ import { Icon } from "./ui/Icon";
 
 /** Text control: 44 px tall, 3:1 boundary, soft focus halo plus a solid accent border. */
 export const inputClass =
-  "mt-1.5 block min-h-11 w-full rounded-[10px] border border-line-strong bg-white px-3.5 text-base text-ink placeholder:text-ink-muted/70 " +
-  "transition-[border-color,box-shadow] duration-200 ease-[cubic-bezier(0.28,0.11,0.32,1)] " +
+  "mt-1.5 block min-h-11 w-full rounded-sm border border-line-strong bg-white px-3.5 text-base text-ink placeholder:text-ink-muted/70 " +
+  "transition-[border-color,box-shadow] duration-200 ease-apple " +
   "hover:border-ink-muted focus:border-navy focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-navy)_18%,transparent)] focus-visible:outline-none " +
   "aria-[invalid=true]:border-sold aria-[invalid=true]:focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-sold)_15%,transparent)] disabled:bg-sand disabled:text-ink-muted read-only:bg-sand/60";
 
-export const selectClass = cn(
-  inputClass,
-  "appearance-none bg-[length:1.125rem] bg-[right_0.75rem_center] bg-no-repeat pr-10",
-  "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236e6e73' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m7 9.5 5 5 5-5'/%3E%3C/svg%3E\")]",
-);
+export const selectClass = cn(inputClass, "select-chevron");
 
 export const labelClass = "block text-sm font-medium text-ink";
 
@@ -25,7 +21,7 @@ export function describedBy(id: string, msg: FieldMessages): string | undefined 
   return ids.length ? ids.join(" ") : undefined;
 }
 
-export const verifyBox = "rounded-[12px] bg-reserved-bg/70 p-3 ring-1 ring-reserved/25";
+export const verifyBox = "rounded-sm bg-reserved-bg/70 p-3 ring-1 ring-reserved/25";
 
 export function VerifyNote({ id }: { id?: string }) {
   return (

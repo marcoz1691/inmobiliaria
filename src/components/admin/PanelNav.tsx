@@ -68,7 +68,7 @@ export function PanelNav({ items, userName, badges = {} }: { items: PanelNavItem
                           href={i.href}
                           aria-current={on ? "page" : undefined}
                           className={cn(
-                            "group flex min-h-11 items-center gap-3 rounded-[10px] px-2.5 text-[0.9375rem] font-medium focus-visible:-outline-offset-2",
+                            "group flex min-h-11 items-center gap-3 rounded-xs px-2.5 text-[0.9375rem] font-medium focus-visible:-outline-offset-2",
                             tap,
                             on ? "bg-navy text-white" : "text-ink hover:bg-ink/[0.05] active:bg-ink/[0.08]",
                           )}
@@ -93,7 +93,7 @@ export function PanelNav({ items, userName, badges = {} }: { items: PanelNavItem
           type="button"
           onClick={() => void signOut()}
           disabled={pending}
-          className={cn("mt-2 flex min-h-11 items-center gap-3 rounded-[10px] px-2.5 text-[0.9375rem] font-medium text-ink-muted hover:bg-ink/[0.05] hover:text-ink focus-visible:-outline-offset-2 disabled:opacity-50", tap)}
+          className={cn("mt-2 flex min-h-11 items-center gap-3 rounded-xs px-2.5 text-[0.9375rem] font-medium text-ink-muted hover:bg-ink/[0.05] hover:text-ink focus-visible:-outline-offset-2 disabled:opacity-50", tap)}
         >
           <Icon name="logout" className="size-5" />
           {pending ? "Cerrando sesión…" : "Cerrar sesión"}
@@ -102,7 +102,7 @@ export function PanelNav({ items, userName, badges = {} }: { items: PanelNavItem
 
       <nav
         aria-label="Panel"
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-ink/10 bg-white/75 pb-[env(safe-area-inset-bottom)] backdrop-blur-2xl backdrop-saturate-[1.8] md:hidden"
+        className="fixed inset-x-0 bottom-0 z-40 glass border-t border-ink/10 pb-[env(safe-area-inset-bottom)] md:hidden"
       >
         <ul className="mx-auto grid max-w-lg grid-cols-5">
           {[...primary, { href: "/panel/mas", label: "Más", icon: "more" as IconName }].map((i) => {

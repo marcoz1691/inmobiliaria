@@ -75,7 +75,7 @@ export default async function PropertiesPage({ searchParams }: PageProps<"/panel
             defaultValue={q}
             placeholder="Buscar por título o ciudad"
             enterKeyHint="search"
-            className="block min-h-11 w-full rounded-[10px] bg-ink/[0.06] pr-3 pl-10 text-base text-ink placeholder:text-ink-muted focus:bg-white focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-navy)_18%,transparent)] focus:ring-1 focus:ring-navy focus-visible:outline-none"
+            className="block min-h-11 w-full rounded-sm bg-ink/[0.06] pr-3 pl-10 text-base text-ink placeholder:text-ink-muted focus:bg-white focus:shadow-[0_0_0_4px_color-mix(in_srgb,var(--color-navy)_18%,transparent)] focus:ring-1 focus:ring-navy focus-visible:outline-none"
           />
           {rawStatus ? <input type="hidden" name="estado" value={rawStatus} /> : null}
           <button type="submit" className="sr-only">
@@ -121,9 +121,9 @@ export default async function PropertiesPage({ searchParams }: PageProps<"/panel
             const price = p.price === null ? "Sin precio" : p.priceKind === "appraisal" ? `Avalúo ${formatUsd(p.price)}` : formatUsd(p.price);
             return (
               <ListItem key={p.id} inset="thumb" className="grid grid-cols-[5.5rem_1fr] gap-x-4 gap-y-3 p-4 sm:grid-cols-[7rem_1fr_auto] sm:items-center">
-                <Link href={`/panel/propiedades/${p.id}`} tabIndex={-1} aria-hidden="true" className="group relative aspect-[4/3] overflow-hidden rounded-[10px] bg-sand">
+                <Link href={`/panel/propiedades/${p.id}`} tabIndex={-1} aria-hidden="true" className="group relative aspect-[4/3] overflow-hidden rounded-sm bg-sand">
                   {p.coverSrc ? (
-                    <Image src={p.coverSrc} alt="" fill sizes="112px" className="object-cover transition-[scale] duration-500 ease-[cubic-bezier(0.28,0.11,0.32,1)] group-hover:scale-[1.04]" />
+                    <Image src={p.coverSrc} alt="" fill sizes="112px" className="object-cover transition-[scale] duration-500 ease-apple group-hover:scale-[1.04]" />
                   ) : (
                     <span className="absolute inset-0 grid place-items-center text-ink-muted/70">
                       <Icon name="photo" className="size-6" />

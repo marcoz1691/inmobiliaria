@@ -33,7 +33,7 @@ export function ListBones({ rows = 4, leading = "tile", className }: { rows?: nu
     <div className={cn("overflow-hidden rounded-sm bg-white ring-1 ring-ink/[0.04]", className)}>
       {Array.from({ length: rows }, (_, i) => (
         <div key={i} className="flex items-center gap-3 border-t border-line/60 px-4 py-3 first:border-t-0">
-          {leading === "tile" ? <Bone className="size-[1.875rem] rounded-[8px]" /> : leading === "thumb" ? <Bone className="aspect-[4/3] w-20 rounded-[8px] sm:w-28" /> : null}
+          {leading === "tile" ? <Bone className="size-[1.875rem] rounded-xs" /> : leading === "thumb" ? <Bone className="aspect-[4/3] w-20 rounded-xs sm:w-28" /> : null}
           <div className="flex-1">
             <Bone className="h-4 w-1/2" />
             <Bone className="mt-2 h-3 w-1/3" />

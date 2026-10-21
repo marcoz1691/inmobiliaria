@@ -10,7 +10,7 @@ export default async function LoginPage() {
   if (await getMember()) redirect("/panel");
   return (
     <main id="contenido" className="flex w-full flex-1 flex-col items-center justify-center px-4 py-12 sm:py-20">
-      <div className="w-full max-w-[25rem] transition-[opacity,translate] duration-700 ease-[cubic-bezier(0.28,0.11,0.32,1)] starting:translate-y-3 starting:opacity-0">
+      <div className="w-full max-w-[25rem] transition-[opacity,translate] duration-700 ease-apple starting:translate-y-3 starting:opacity-0">
         <div className="flex flex-col items-center text-center">
           <span aria-hidden="true" className="grid size-16 place-items-center rounded-[18px] bg-navy text-white shadow-[0_10px_30px_-10px_rgba(0,0,0,0.35)]">
             <Icon name="building" className="size-8" strokeWidth={1.8} />

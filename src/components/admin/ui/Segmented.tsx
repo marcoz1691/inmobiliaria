@@ -24,7 +24,7 @@ function useThumb(active: string) {
 
 const trackClass = "relative inline-flex max-w-full rounded-[11px] bg-ink/[0.06] p-[3px]";
 const segmentClass = cn(
-  "relative z-10 inline-flex min-h-[2.375rem] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-[8px] px-3.5 text-sm font-medium whitespace-nowrap text-ink",
+  "relative z-10 inline-flex min-h-[2.375rem] min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xs px-3.5 text-sm font-medium whitespace-nowrap text-ink",
   "transition-colors duration-200 focus-visible:-outline-offset-1",
   ease,
 );
@@ -34,7 +34,7 @@ function Thumb({ box }: { box: { x: number; w: number } | null }) {
     <span
       aria-hidden="true"
       className={cn(
-        "absolute top-[3px] bottom-[3px] left-0 rounded-[8px] bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]",
+        "absolute top-[3px] bottom-[3px] left-0 rounded-xs bg-white shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]",
         "transition-[translate,width] duration-300",
         ease,
         !box && "opacity-0",

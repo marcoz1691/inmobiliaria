@@ -18,7 +18,7 @@ const TILE: Record<TileTone, string> = {
 
 export function IconTile({ name, tone = "navy", size = "md", className }: { name: IconName; tone?: TileTone; size?: "md" | "lg"; className?: string }) {
   return (
-    <span aria-hidden="true" className={cn("grid shrink-0 place-items-center text-white", size === "lg" ? "size-10 rounded-[10px]" : "size-[1.875rem] rounded-[8px]", TILE[tone], className)}>
+    <span aria-hidden="true" className={cn("grid shrink-0 place-items-center text-white", size === "lg" ? "size-10 rounded-xs" : "size-[1.875rem] rounded-xs", TILE[tone], className)}>
       <Icon name={name} className={size === "lg" ? "size-[1.375rem]" : "size-[1.125rem]"} strokeWidth={1.9} />
     </span>
   );

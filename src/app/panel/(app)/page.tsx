@@ -79,7 +79,7 @@ export default async function DashboardPage() {
             <li key={s.label}>
               <Link
                 href={s.href}
-                className={cn("group flex h-full flex-col rounded-md bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-ink/[0.04] focus-visible:outline-offset-2 sm:p-5", "transition-[scale,box-shadow] duration-300 ease-[cubic-bezier(0.28,0.11,0.32,1)] hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.12)] active:scale-[0.98]")}
+                className={cn("group flex h-full flex-col rounded-md bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)] ring-1 ring-ink/[0.04] focus-visible:outline-offset-2 sm:p-5", "transition-[scale,box-shadow] duration-300 ease-apple hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.12)] active:scale-[0.98]")}
               >
                 <span className="flex items-start justify-between">
                   <IconTile name={s.icon} tone={s.tone} />
