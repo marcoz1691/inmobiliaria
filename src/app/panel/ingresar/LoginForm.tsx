@@ -30,7 +30,7 @@ export function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="mt-8 rounded-md bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-24px_rgba(0,0,0,0.18)] ring-1 ring-ink/[0.04] sm:p-6" noValidate>
+    <form method="post" action="/panel/ingresar" onSubmit={onSubmit} className="mt-8 rounded-md bg-white p-5 shadow-[0_1px_2px_rgba(0,0,0,0.04),0_20px_50px_-24px_rgba(0,0,0,0.18)] ring-1 ring-ink/[0.04] sm:p-6" noValidate>
       <div className="space-y-4">
         <div>
           <label htmlFor="email" className={labelClass}>

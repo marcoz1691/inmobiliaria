@@ -10,7 +10,7 @@ export class AppError extends Error {
   }
 }
 
-export const notFound = (what = "Recurso") => new AppError("not_found", `${what} no encontrado`);
+export const notFound = (what = "Recurso") => new AppError("not_found", `${what} no se encontró`);
 export const forbidden = () => new AppError("forbidden", "No tienes permiso para esta acción");
 
 export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
