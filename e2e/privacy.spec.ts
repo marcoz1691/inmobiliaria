@@ -26,6 +26,25 @@ test.describe("public privacy in rendered HTML (including the RSC payload)", () 
   });
 });
 
+/** Slice starting at the consent control so the site footer link to /privacidad does not count. */
+function aroundConsent(html: string): string | undefined {
+  const i = html.search(/name="consent"|id="[^"]*consent"/);
+  if (i < 0) return undefined;
+  return html.slice(i, i + 1600);
+}
+
+test.describe("LOPDP consent control on public HTML", () => {
+  test("contacto and listing place a /privacidad link next to the checkbox", async ({ request }) => {
+    test.fail(true, "QA-consent: el checkbox aún no enlaza a /privacidad; r4/product.");
+    for (const path of ["/contacto", `/propiedades/${SLUG}`]) {
+      const html = await (await request.get(path, { timeout: 120_000 })).text();
+      const slice = aroundConsent(html);
+      expect(slice, path).toBeTruthy();
+      expect(slice, path).toMatch(/href="\/privacidad"/);
+    }
+  });
+});
+
 test.describe("panel APIs on the real server", () => {
   test("anonymous requests get 401 and never a file", async ({ request }) => {
     const id = "00000000-0000-4000-8000-000000000000";
