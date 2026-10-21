@@ -16,7 +16,7 @@ type Item = { key: string; name: string; progress: number; state: "waiting" | "u
 function summary(r: ImportResult): { text: string; tone: "ok" | "warn" } {
   if (r.kind === "already_imported") return { text: `Este PDF ya se importó antes («${r.fileName}»).`, tone: "warn" };
   if (r.kind === "needs_ocr") return { text: r.message, tone: "warn" };
-  if (r.created === 0) return { text: r.skipped ? "No se creó ningún borrador: ya existen propiedades muy parecidas." : "No se encontraron propiedades en el PDF.", tone: "warn" };
+  if (r.created === 0) return { text: r.skipped ? "No se creó ningún borrador: ya existen propiedades muy parecidas." : "No encontramos fichas con precio y dirección. Puedes crear la propiedad a mano y adjuntar fotos.", tone: "warn" };
   const drafts = r.created === 1 ? "Se creó 1 borrador" : `Se crearon ${r.created} borradores`;
   return { text: `${drafts} para revisar${r.skipped ? ` y se omitieron ${r.skipped} posibles duplicados` : ""}.`, tone: "ok" };
 }
@@ -37,7 +37,7 @@ export function PdfImporter() {
     if (input.current) input.current.value = "";
     for (const q of queued) {
       if (q.file.type !== "application/pdf" && !/\.pdf$/i.test(q.file.name)) {
-        patch(q.key, { state: "error", error: "Solo se aceptan archivos PDF." });
+        patch(q.key, { state: "error", error: "Solo se aceptan PDF. Exporta la presentación como PDF e inténtalo de nuevo." });
         continue;
       }
       if (q.file.size > MAX_BYTES) {
