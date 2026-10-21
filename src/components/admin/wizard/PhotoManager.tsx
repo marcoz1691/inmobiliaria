@@ -209,6 +209,7 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
             La primera foto es la portada. Arrastra desde el asa, usa las flechas o «Usar como portada» para cambiar el orden.
           </p>
           <DndContext
+            id={`${id}-dnd`}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={onDragEnd}
