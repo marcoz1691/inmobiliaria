@@ -1,13 +1,16 @@
 "use client";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/admin/ui/Button";
+import { ListGroup, ListItem } from "@/components/admin/ui/ListGroup";
+import { useToast } from "@/components/admin/ui/Toast";
 import { addNoteAction, addTaskAction, toggleTaskAction } from "@/app/panel/(app)/prospectos/actions";
 import { inputClass } from "./fields";
 
 export function NoteForm({ dealId }: { dealId: string }) {
   const id = useId();
   const router = useRouter();
+  const toast = useToast();
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -20,6 +23,7 @@ export function NoteForm({ dealId }: { dealId: string }) {
           if (r.ok) {
             setBody("");
             setError(null);
+            toast.success("Nota guardada.");
             router.refresh();
           } else setError(r.error);
         });
@@ -39,11 +43,11 @@ export function NoteForm({ dealId }: { dealId: string }) {
         aria-describedby={error ? `${id}-e` : undefined}
       />
       {error ? (
-        <p id={`${id}-e`} className="mt-1 text-sm text-sold">
+        <p id={`${id}-e`} className="mt-1 text-sm font-medium text-sold">
           {error}
         </p>
       ) : null}
-      <Button type="submit" variant="secondary" className="mt-2" disabled={pending || !body.trim()}>
+      <Button type="submit" variant="tinted" className="mt-3 w-full sm:w-auto" pending={pending} disabled={!body.trim()}>
         {pending ? "Guardando…" : "Guardar nota"}
       </Button>
     </form>
@@ -56,6 +60,7 @@ const fmt = new Intl.DateTimeFormat("es-EC", { dateStyle: "medium", timeStyle: "
 export function Tasks({ dealId, tasks }: { dealId: string; tasks: TaskItem[] }) {
   const id = useId();
   const router = useRouter();
+  const toast = useToast();
   const [title, setTitle] = useState("");
   const [due, setDue] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +68,10 @@ export function Tasks({ dealId, tasks }: { dealId: string; tasks: TaskItem[] }) 
   return (
     <div>
       {tasks.length ? (
-        <ul className="divide-y divide-line border-y border-line">
+        <ListGroup className="mb-4" aria-label="Tareas del prospecto">
           {tasks.map((t) => (
-            <li key={t.id}>
-              <label className="flex min-h-12 cursor-pointer items-center gap-3 py-2">
+            <ListItem key={t.id}>
+              <label className="flex min-h-12 cursor-pointer items-center gap-3 px-4 py-2">
                 <input
                   type="checkbox"
                   className="size-5 shrink-0 accent-navy"
@@ -74,8 +79,10 @@ export function Tasks({ dealId, tasks }: { dealId: string; tasks: TaskItem[] }) 
                   onChange={() =>
                     start(async () => {
                       const r = await toggleTaskAction(dealId, t.id);
-                      if (r.ok) router.refresh();
-                      else setError(r.error);
+                      if (r.ok) {
+                        toast.success(t.doneAt ? "Tarea reabierta." : "Tarea marcada como hecha.");
+                        router.refresh();
+                      } else setError(r.error);
                     })
                   }
                 />
@@ -84,14 +91,14 @@ export function Tasks({ dealId, tasks }: { dealId: string; tasks: TaskItem[] }) 
                   {t.dueAt ? <span className="block text-sm text-ink-muted no-underline">Vence: {fmt.format(new Date(t.dueAt))}</span> : null}
                 </span>
               </label>
-            </li>
+            </ListItem>
           ))}
-        </ul>
+        </ListGroup>
       ) : (
-        <p className="text-sm text-ink-muted">Sin tareas.</p>
+        <p className="mb-4 text-sm text-ink-muted">Sin tareas.</p>
       )}
       <form
-        className="mt-4 grid gap-3 sm:grid-cols-[1fr_14rem_auto] sm:items-end"
+        className="grid gap-3 sm:grid-cols-[1fr_14rem_auto] sm:items-end"
         onSubmit={(e) => {
           e.preventDefault();
           start(async () => {
@@ -100,6 +107,7 @@ export function Tasks({ dealId, tasks }: { dealId: string; tasks: TaskItem[] }) 
               setTitle("");
               setDue("");
               setError(null);
+              toast.success("Tarea agregada.");
               router.refresh();
             } else setError(r.error);
           });
@@ -117,12 +125,12 @@ export function Tasks({ dealId, tasks }: { dealId: string; tasks: TaskItem[] }) 
           </label>
           <input id={`${id}-d`} type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} className={inputClass} />
         </div>
-        <Button type="submit" variant="secondary" disabled={pending || title.trim().length < 2}>
+        <Button type="submit" variant="tinted" className="w-full sm:w-auto" pending={pending} disabled={title.trim().length < 2}>
           Agregar
         </Button>
       </form>
       {error ? (
-        <p role="alert" className="mt-2 text-sm text-sold">
+        <p role="alert" className="mt-2 text-sm font-medium text-sold">
           {error}
         </p>
       ) : null}

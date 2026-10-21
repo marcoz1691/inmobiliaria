@@ -3,6 +3,9 @@ import { useId, useState } from "react";
 import { OPERATIONS, OPERATION_LABEL, PROPERTY_TYPES, TYPE_LABEL } from "@/modules/properties/domain";
 import { Field, describedBy, inputClass, selectClass } from "../fields";
 import { cn } from "@/components/ui/cn";
+import { Icon } from "../ui/Icon";
+import { card } from "../ui/ListGroup";
+import { ease, press, tap } from "../ui/motion";
 import { AMENITY_SUGGESTIONS, type FieldName, type FormState } from "./model";
 
 export type StepFieldsProps = {
@@ -39,7 +42,7 @@ export function BasicsFields(props: StepFieldsProps) {
   const sector = fp("sector");
   const province = fp("province");
   return (
-    <div className="grid gap-5 sm:grid-cols-2">
+    <div className={cn(card, "grid gap-5 p-4 sm:grid-cols-2 sm:p-6")}>
       <Field {...title.field} label="Título" className="sm:col-span-2">
         <input {...title.control} className={inputClass} value={form.title} maxLength={140} autoComplete="off" onChange={(e) => set("title", e.target.value)} />
       </Field>
@@ -55,11 +58,11 @@ export function BasicsFields(props: StepFieldsProps) {
       </Field>
       <fieldset className={cn("min-w-0", op.field.verify && "rounded-sm bg-reserved-bg/60 p-3 ring-1 ring-reserved/30")} aria-describedby={op.control["aria-describedby"]}>
         <legend className="text-sm font-medium text-ink">Operación</legend>
-        <div className="mt-1.5 grid grid-cols-2 gap-2">
+        <div className="mt-1.5 grid grid-cols-2 gap-1 rounded-sm bg-ink/[0.06] p-[3px]">
           {OPERATIONS.map((o) => (
             <label
               key={o}
-              className="flex min-h-11 cursor-pointer items-center justify-center rounded-sm border border-line-strong bg-white px-3 text-base text-ink has-checked:border-navy has-checked:bg-navy has-checked:text-white has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-navy"
+              className={cn("flex min-h-11 cursor-pointer items-center justify-center rounded-[0.6875rem] px-3 text-base font-medium text-ink-muted hover:text-ink has-checked:bg-white has-checked:text-ink has-checked:shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-navy", tap)}
             >
               <input type="radio" name="operation" value={o} checked={form.operation === o} onChange={() => set("operation", o)} className="sr-only" />
               {OPERATION_LABEL[o]}
@@ -108,15 +111,17 @@ export function DetailsFields(props: StepFieldsProps) {
   const lat = fp("lat");
   const lng = fp("lng");
   return (
-    <div className="grid gap-8">
-      <Field {...desc.field} label="Descripción" optional>
-        <textarea {...desc.control} rows={7} maxLength={6000} className={cn(inputClass, "py-2 leading-relaxed")} value={form.description} onChange={(e) => set("description", e.target.value)} />
-      </Field>
+    <div className="grid gap-5">
+      <div className={cn(card, "p-4 sm:p-6")}>
+        <Field {...desc.field} label="Descripción" optional>
+          <textarea {...desc.control} rows={7} maxLength={6000} className={cn(inputClass, "py-2 leading-relaxed")} value={form.description} onChange={(e) => set("description", e.target.value)} />
+        </Field>
+      </div>
 
-      <fieldset>
-        <legend className="font-display text-xl text-ink">Medidas y espacios</legend>
-        <p className="mt-1 text-sm text-ink-muted">Deja vacío lo que no aplique o no sepas con certeza.</p>
-        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+      <fieldset className={cn(card, "min-w-0 p-4 sm:p-6")}>
+        <legend className="float-left w-full text-headline text-ink">Medidas y espacios</legend>
+        <p className="clear-both pt-1 text-sm text-ink-muted">Deja vacío lo que no aplique o no sepas con certeza.</p>
+        <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3">
           {nums.map(({ f, label, mode }) => {
             const x = fp(f);
             return (
@@ -149,8 +154,9 @@ export function DetailsFields(props: StepFieldsProps) {
         onChange={(v) => set("highlights", v)}
       />
 
-      <fieldset className="grid gap-5 sm:grid-cols-2">
-        <legend className="font-display text-xl text-ink">Ubicación</legend>
+      <fieldset className={cn(card, "min-w-0 p-4 sm:p-6")}>
+        <legend className="float-left w-full text-headline text-ink">Ubicación</legend>
+        <div className="clear-both grid gap-5 pt-4 sm:grid-cols-2">
         <Field {...address.field} label="Dirección" optional className="sm:col-span-2">
           <input {...address.control} className={inputClass} value={form.address} autoComplete="street-address" onChange={(e) => set("address", e.target.value)} />
         </Field>
@@ -162,6 +168,7 @@ export function DetailsFields(props: StepFieldsProps) {
         </Field>
         <div className="sm:col-span-2">
           <PrivacyChoice value={form.locationPrivacy} onChange={(v) => set("locationPrivacy", v)} />
+        </div>
         </div>
       </fieldset>
     </div>
@@ -178,19 +185,20 @@ function PrivacyChoice({ value, onChange }: { value: FormState["locationPrivacy"
   return (
     <fieldset>
       <legend className="text-sm font-medium text-ink">Privacidad de la ubicación en el sitio</legend>
-      <div className="mt-2 grid gap-2">
+      <div className="mt-2 overflow-hidden rounded-sm ring-1 ring-line">
         {PRIVACY.map((p) => (
           <label
             key={p.v}
-            className="flex cursor-pointer gap-3 rounded-sm border border-line-strong bg-white p-3 has-checked:border-navy has-checked:ring-1 has-checked:ring-navy"
+            className={cn("relative flex min-h-11 cursor-pointer items-start gap-3 bg-white p-3.5 not-first:border-t not-first:border-line hover:bg-ink/[0.02] has-checked:bg-navy/[0.04] has-focus-visible:outline-2 has-focus-visible:-outline-offset-2 has-focus-visible:outline-navy", tap)}
           >
-            <input type="radio" name="locationPrivacy" value={p.v} checked={value === p.v} onChange={() => onChange(p.v)} className="mt-1 size-5 shrink-0 accent-navy" aria-describedby={`priv-${p.v}`} />
-            <span>
-              <span className="block text-base text-ink">{p.label}</span>
+            <input type="radio" name="locationPrivacy" value={p.v} checked={value === p.v} onChange={() => onChange(p.v)} className="peer sr-only" aria-describedby={`priv-${p.v}`} />
+            <span className="min-w-0 flex-1">
+              <span className="block text-base font-medium text-ink">{p.label}</span>
               <span id={`priv-${p.v}`} className="block text-sm text-ink-muted">
                 {p.help}
               </span>
             </span>
+            <Icon name="check" strokeWidth={2.6} className={cn("mt-0.5 size-5 shrink-0 text-navy opacity-0 scale-50 transition-[opacity,scale] duration-300 peer-checked:scale-100 peer-checked:opacity-100", ease)} />
           </label>
         ))}
       </div>
@@ -220,9 +228,9 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
   };
   const remaining = suggestions.filter((s) => !has(s));
   return (
-    <fieldset className={cn(verify && "rounded-sm bg-reserved-bg/60 p-3 ring-1 ring-reserved/30")} aria-describedby={`${id}-help`}>
-      <legend className="font-display text-xl text-ink">{legend}</legend>
-      <p id={`${id}-help`} className="mt-1 text-sm text-ink-muted">
+    <fieldset className={cn(card, "min-w-0 p-4 sm:p-6", verify && "bg-reserved-bg/50 ring-reserved/30")} aria-describedby={`${id}-help`}>
+      <legend className="float-left w-full text-headline text-ink">{legend}</legend>
+      <p id={`${id}-help`} className="clear-both pt-1 text-sm text-ink-muted">
         {help}
         {verify ? <span className="block font-medium text-reserved">Verifica este dato: se importó del PDF con dudas.</span> : null}
       </p>
@@ -234,12 +242,10 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
                 type="button"
                 onClick={() => onChange(values.filter((x) => x !== v))}
                 aria-label={`Quitar ${v}`}
-                className="inline-flex min-h-11 items-center gap-2 rounded-full bg-ink px-4 text-sm text-paper hover:bg-ink/85"
+                className={cn("inline-flex min-h-11 items-center gap-1.5 rounded-full bg-navy pr-3 pl-4 text-[0.9375rem] font-medium text-white hover:bg-navy-hover", tap, press)}
               >
                 {v}
-                <svg aria-hidden="true" viewBox="0 0 20 20" className="size-4" fill="none" stroke="currentColor" strokeWidth="1.8">
-                  <path d="m6 6 8 8M14 6l-8 8" />
-                </svg>
+                <Icon name="x" className="size-4 opacity-80" strokeWidth={2.2} />
               </button>
             </li>
           ))}
@@ -247,7 +253,7 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
       ) : null}
       {remaining.length ? (
         <div className="mt-3">
-          <p className="text-xs font-medium text-ink-muted uppercase">Sugerencias</p>
+          <p className="text-[0.8125rem] font-semibold text-ink-muted">Sugerencias</p>
           <ul className="mt-2 flex flex-wrap gap-2">
             {remaining.map((s) => (
               <li key={s}>
@@ -255,9 +261,9 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
                   type="button"
                   onClick={() => add(s)}
                   aria-label={`Agregar ${s}`}
-                  className="inline-flex min-h-11 items-center gap-1 rounded-full border border-line-strong bg-white px-4 text-sm text-ink hover:border-ink"
+                  className={cn("inline-flex min-h-11 items-center gap-1 rounded-full bg-ink/[0.06] pr-4 pl-3 text-[0.9375rem] text-ink hover:bg-ink/[0.1]", tap, press)}
                 >
-                  <span aria-hidden="true">+</span> {s}
+                  <Icon name="plus" className="size-4 text-navy" strokeWidth={2.2} /> {s}
                 </button>
               </li>
             ))}
@@ -290,7 +296,7 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
             add(draft);
             setDraft("");
           }}
-          className="min-h-11 shrink-0 rounded-full border border-ink/80 px-4 text-sm font-medium text-ink hover:bg-ink hover:text-paper"
+          className={cn("min-h-11 shrink-0 rounded-full bg-navy/10 px-4 text-[0.9375rem] font-medium text-navy hover:bg-navy/15", tap, press)}
         >
           Agregar
         </button>
@@ -308,26 +314,24 @@ function ListEditor({ legend, help, values, max, maxLength, verify, onChange }: 
     setDraft("");
   };
   return (
-    <fieldset className={cn(verify && "rounded-sm bg-reserved-bg/60 p-3 ring-1 ring-reserved/30")} aria-describedby={`${id}-help`}>
-      <legend className="font-display text-xl text-ink">{legend}</legend>
-      <p id={`${id}-help`} className="mt-1 text-sm text-ink-muted">
+    <fieldset className={cn(card, "min-w-0 p-4 sm:p-6", verify && "bg-reserved-bg/50 ring-reserved/30")} aria-describedby={`${id}-help`}>
+      <legend className="float-left w-full text-headline text-ink">{legend}</legend>
+      <p id={`${id}-help`} className="clear-both pt-1 text-sm text-ink-muted">
         {help}
         {verify ? <span className="block font-medium text-reserved">Verifica este dato: se importó del PDF con dudas.</span> : null}
       </p>
       {values.length ? (
-        <ol className="mt-3 divide-y divide-line border-y border-line">
+        <ol className="mt-3 overflow-hidden rounded-sm bg-sand/60">
           {values.map((v, i) => (
-            <li key={v} className="flex items-center gap-2 py-1">
-              <span className="flex-1 text-base text-ink">{v}</span>
+            <li key={v} className="relative flex items-center gap-2 py-0.5 pl-3.5 not-first:before:absolute not-first:before:inset-x-3.5 not-first:before:top-0 not-first:before:h-px not-first:before:bg-line">
+              <span className="min-w-0 flex-1 text-base text-ink">{v}</span>
               <button
                 type="button"
-                className="grid size-11 place-items-center rounded-full text-ink hover:bg-ink/5"
+                className={cn("grid size-11 shrink-0 place-items-center rounded-full text-ink-muted hover:bg-ink/5 hover:text-sold", tap)}
                 aria-label={`Quitar «${v}»`}
                 onClick={() => onChange(values.filter((_, j) => j !== i))}
               >
-                <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <path d="m5 5 10 10M15 5 5 15" />
-                </svg>
+                <Icon name="trash" className="size-5" />
               </button>
             </li>
           ))}
@@ -351,7 +355,7 @@ function ListEditor({ legend, help, values, max, maxLength, verify, onChange }: 
             }
           }}
         />
-        <button type="button" onClick={add} className="min-h-11 shrink-0 rounded-full border border-ink/80 px-4 text-sm font-medium text-ink hover:bg-ink hover:text-paper">
+        <button type="button" onClick={add} className={cn("min-h-11 shrink-0 rounded-full bg-navy/10 px-4 text-[0.9375rem] font-medium text-navy hover:bg-navy/15", tap, press)}>
           Agregar
         </button>
       </div>

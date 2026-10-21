@@ -1,9 +1,11 @@
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { publishProblems, type PropertyStatus } from "@/modules/properties/domain";
-import { Button } from "@/components/ui/Button";
+import { BackLink } from "../PageHeader";
+import { Button } from "../ui/Button";
+import { Icon } from "../ui/Icon";
+import { ease, press } from "../ui/motion";
 import { cn } from "@/components/ui/cn";
 import { StatusTag } from "../StatusTag";
 import { markReviewedAction, saveDraftAction } from "@/app/panel/(app)/propiedades/actions";
@@ -37,7 +39,8 @@ export function PropertyWizard({ property, initialForm, photos: initialPhotos }:
   const [status, setStatus] = useState(property.status);
   const [slug, setSlug] = useState(property.slug);
   const [needsReview, setNeedsReview] = useState(property.needsReview);
-  const [reviewMsg, setReviewMsg] = useState<string | null>(null);
+  const [reviewMsg, setReviewMsg] = useState<{ text: string; error?: boolean } | null>(null);
+  const [reviewPending, setReviewPending] = useState(false);
   const [touched, setTouched] = useState<Set<FieldName>>(new Set());
   const headingRef = useRef<HTMLHeadingElement>(null);
   const firstRender = useRef(true);
@@ -134,90 +137,119 @@ export function PropertyWizard({ property, initialForm, photos: initialPhotos }:
   }, [form, priceKind, needsReview, photos.length]);
 
   async function completeReview() {
-    await flush();
-    const r = await markReviewedAction(property.id);
-    if (r.ok) {
-      setNeedsReview(false);
-      setReviewMsg("Revisión completa. Ya puedes publicar cuando todo esté listo.");
-    } else setReviewMsg(r.error);
+    setReviewPending(true);
+    setReviewMsg(null);
+    try {
+      await flush();
+      const r = await markReviewedAction(property.id);
+      if (r.ok) {
+        setNeedsReview(false);
+        setReviewMsg({ text: "Revisión completa. Ya puedes publicar cuando todo esté listo." });
+      } else setReviewMsg({ text: r.error, error: true });
+    } catch {
+      setReviewMsg({ text: "Sin conexión. Revisa tu señal e inténtalo de nuevo.", error: true });
+    } finally {
+      setReviewPending(false);
+    }
   }
 
   const fieldsProps = { form, set, errors, verify, appraisal: priceKind === "appraisal" };
   const current = STEPS[stepIndex]!;
   const isLive = ["published", "reserved"].includes(status);
+  const prev = stepIndex > 0 ? STEPS[stepIndex - 1]! : null;
+  const next = stepIndex < STEPS.length - 1 ? STEPS[stepIndex + 1]! : null;
 
   return (
     <div className="mx-auto max-w-3xl">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/panel/propiedades" className="inline-flex min-h-11 items-center text-sm text-ink underline-offset-4 hover:underline">
-          <span aria-hidden="true">←&nbsp;</span>Propiedades
-        </Link>
+      <div className="flex items-center justify-between gap-3">
+        <BackLink href="/panel/propiedades" label="Propiedades" />
         <SaveStatus state={autosave.state} error={autosave.error} />
       </div>
 
-      <div className="mt-2 flex flex-wrap items-center gap-2">
+      <div className="mt-3 flex flex-wrap items-center gap-2">
         <StatusTag status={status} />
         {isLive ? <span className="text-sm text-ink-muted">Los cambios se ven en el sitio apenas se guardan.</span> : null}
       </div>
-      <p className="mt-2 truncate font-display text-lg text-ink-muted">{form.title || "Propiedad sin título"}</p>
+      <p className="mt-2 truncate text-[1.0625rem] font-medium text-ink-muted">{form.title || "Propiedad sin título"}</p>
 
-      <nav aria-label="Pasos" className="mt-4">
-        <p className="text-sm text-ink-muted">
+      <nav aria-label="Pasos" className="mt-5">
+        <p className="sr-only">
           Paso {stepIndex + 1} de {STEPS.length}
         </p>
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-sand" aria-hidden="true">
-          <div className="h-full bg-navy transition-[width] duration-300" style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }} />
-        </div>
-        <ol className="mt-3 grid grid-cols-4 gap-1">
-          {STEPS.map((s, i) => (
-            <li key={s.key}>
-              <button
-                type="button"
-                onClick={() => goto(s.key)}
-                aria-current={s.key === step ? "step" : undefined}
-                className={cn(
-                  "flex min-h-11 w-full flex-col items-start justify-center rounded-sm px-2 text-left text-xs leading-tight sm:text-sm",
-                  s.key === step ? "bg-ink text-paper" : "text-ink hover:bg-ink/5",
-                )}
-              >
-                <span className="sr-only">Paso {i + 1}: </span>
-                {s.label}
-              </button>
-            </li>
-          ))}
+        <ol className="grid grid-cols-4 gap-1 rounded-[0.75rem] bg-ink/[0.06] p-[3px]">
+          {STEPS.map((s, i) => {
+            const on = s.key === step;
+            const done = i < stepIndex;
+            return (
+              <li key={s.key} className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => goto(s.key)}
+                  aria-current={on ? "step" : undefined}
+                  aria-label={`Paso ${i + 1}: ${s.label}`}
+                  className={cn(
+                    "flex min-h-11 w-full min-w-0 items-center justify-center gap-1.5 rounded-[0.5625rem] px-1.5 text-[0.8125rem] font-medium sm:text-sm",
+                    "transition-[background-color,box-shadow,color] duration-300 focus-visible:-outline-offset-1",
+                    ease,
+                    on ? "bg-white text-ink shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)]" : "text-ink-muted hover:text-ink",
+                  )}
+                >
+                  <span
+                    aria-hidden="true"
+                    className={cn(
+                      "grid size-5 shrink-0 place-items-center rounded-full text-[0.6875rem] font-semibold tabular-nums max-sm:hidden",
+                      on ? "bg-navy text-white" : done ? "bg-available text-white" : "bg-ink/10 text-ink-muted",
+                    )}
+                  >
+                    {done ? <Icon name="check" className="size-3" strokeWidth={3} /> : i + 1}
+                  </span>
+                  <span className="truncate">{s.key === "revisar" ? <><span className="sm:hidden">Publicar</span><span className="max-sm:hidden">{s.label}</span></> : s.label}</span>
+                </button>
+              </li>
+            );
+          })}
         </ol>
       </nav>
 
       {needsReview ? (
-        <section aria-labelledby="review-banner" className="mt-6 border-t-2 border-reserved bg-reserved-bg/60 p-4">
-          <h2 id="review-banner" className="font-display text-xl text-ink">
-            Revisa los datos importados
-          </h2>
-          <p className="mt-1 text-sm text-ink">
-            Este borrador se creó a partir de un PDF. Los campos marcados con «Verifica este dato» se leyeron con dudas o faltan. No se puede publicar hasta que marques la revisión como completa.
-          </p>
-          {property.reviewNotes ? (
-            <details className="mt-2 text-sm text-ink">
-              <summary className="min-h-11 cursor-pointer py-2 font-medium">Avisos de la importación</summary>
-              <p className="whitespace-pre-line text-ink-muted">{property.reviewNotes}</p>
-            </details>
-          ) : null}
-          <Button variant="secondary" className="mt-3" onClick={() => void completeReview()}>
-            Marcar revisión completa
-          </Button>
+        <section aria-labelledby="review-banner" className="mt-6 rounded-md bg-reserved-bg p-4 ring-1 ring-reserved/20 sm:p-5">
+          <div className="flex gap-3">
+            <Icon name="alert" className="mt-0.5 size-5 shrink-0 text-reserved" strokeWidth={2} />
+            <div className="min-w-0">
+              <h2 id="review-banner" className="text-[1.0625rem] font-semibold text-ink">
+                Revisa los datos importados
+              </h2>
+              <p className="mt-1 text-sm leading-relaxed text-ink">
+                Este borrador se creó a partir de un PDF. Los campos marcados con «Verifica este dato» se leyeron con dudas o faltan. No se puede publicar hasta que marques la revisión como completa.
+              </p>
+              {property.reviewNotes ? (
+                <details className="group mt-1 text-sm text-ink">
+                  <summary className="inline-flex min-h-11 cursor-pointer list-none items-center gap-1 font-medium text-reserved [&::-webkit-details-marker]:hidden">
+                    Avisos de la importación
+                    <Icon name="chevronDown" className={cn("size-4 transition-transform duration-300 group-open:rotate-180", ease)} strokeWidth={2.2} />
+                  </summary>
+                  <p className="pb-2 whitespace-pre-line text-ink-muted">{property.reviewNotes}</p>
+                </details>
+              ) : null}
+              <Button variant="filled" className="mt-2" onClick={() => void completeReview()} pending={reviewPending}>
+                {reviewPending ? "Guardando…" : "Marcar revisión completa"}
+              </Button>
+            </div>
+          </div>
         </section>
       ) : null}
       {reviewMsg ? (
-        <p role="status" className="mt-3 text-sm font-medium text-available">
-          {reviewMsg}
+        <p role={reviewMsg.error ? "alert" : "status"} className={cn("mt-3 flex items-center gap-1.5 text-sm font-medium", reviewMsg.error ? "text-sold" : "text-available")}>
+          <Icon name={reviewMsg.error ? "alert" : "checkCircle"} className="size-4 shrink-0" strokeWidth={2} />
+          {reviewMsg.text}
         </p>
       ) : null}
 
       <section aria-labelledby="step-title" className="mt-8">
-        <h1 id="step-title" ref={headingRef} tabIndex={-1} className="font-display text-display-md text-ink focus:outline-none">
+        <h1 id="step-title" ref={headingRef} tabIndex={-1} className="font-display text-display-md font-bold text-ink focus:outline-none">
           {current.label}
         </h1>
-        <div className="mt-6">
+        <div className="mt-5">
           {step === "basicos" ? <BasicsFields {...fieldsProps} /> : null}
           {/* Kept mounted so uploads in progress survive a step change. */}
           <div hidden={step !== "fotos"}>
@@ -241,20 +273,24 @@ export function PropertyWizard({ property, initialForm, photos: initialPhotos }:
         </div>
       </section>
 
-      <div className="mt-10 flex items-center justify-between gap-3 border-t border-line pt-6">
-        {stepIndex > 0 ? (
-          <Button variant="ghost" onClick={() => goto(STEPS[stepIndex - 1]!.key)}>
-            <span aria-hidden="true">←</span> {STEPS[stepIndex - 1]!.label}
-          </Button>
-        ) : (
-          <span />
-        )}
-        {stepIndex < STEPS.length - 1 ? (
-          <Button size="lg" onClick={() => goto(STEPS[stepIndex + 1]!.key)}>
-            Siguiente: {STEPS[stepIndex + 1]!.label}
-          </Button>
-        ) : null}
-      </div>
+      {prev || next ? (
+        <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+4.25rem)] z-30 -mx-4 mt-10 px-4 pb-2 md:bottom-4 md:mx-0 md:px-0">
+          <div className="glass flex items-center justify-between gap-2 rounded-full p-1.5 shadow-[0_10px_30px_-12px_rgba(0,0,0,0.25)] ring-1 ring-ink/[0.06]">
+            {prev ? (
+              <Button variant="plain" icon="chevronLeft" onClick={() => goto(prev.key)} className="pl-3">
+                {prev.label}
+              </Button>
+            ) : (
+              <span />
+            )}
+            {next ? (
+              <Button onClick={() => goto(next.key)} className={cn("ml-auto", press)}>
+                Siguiente: {next.label}
+              </Button>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }

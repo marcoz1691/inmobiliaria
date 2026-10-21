@@ -3,8 +3,8 @@ import { requireMember } from "@/server/session";
 import { DEAL_STAGES, STAGE_LABEL, listDeals } from "@/modules/crm/service";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { DealBoard } from "@/components/admin/DealBoard";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { Button } from "@/components/ui/Button";
+import { EmptyState } from "@/components/admin/ui/EmptyState";
+import { Button } from "@/components/admin/ui/Button";
 
 export const metadata: Metadata = { title: "Prospectos" };
 
@@ -24,18 +24,21 @@ export default async function DealsPage() {
   return (
     <div className="mx-auto max-w-7xl">
       <PageHeader eyebrow="CRM" title="Prospectos" description="Cambia la etapa con el selector de cada tarjeta. Abre un prospecto para ver sus respuestas, notas y tareas." />
-      <div className="mt-6">
-        {deals.length ? (
-          <DealBoard deals={deals} stages={stages} />
-        ) : (
-          <EmptyState
-            headingLevel={2}
-            title="Aún no tienes prospectos"
-            description="Llegan desde los formularios de tus propiedades y de tus embudos. Activa un embudo y compártelo en tus anuncios."
-            action={<Button href="/panel/embudos">Ir a embudos</Button>}
-          />
-        )}
-      </div>
+      {deals.length ? (
+        <DealBoard deals={deals} stages={stages} />
+      ) : (
+        <EmptyState
+          headingLevel={2}
+          icon="people"
+          title="Aún no tienes prospectos"
+          description="Llegan desde los formularios de tus propiedades y de tus embudos. Activa un embudo y compártelo en tus anuncios."
+          action={
+            <Button href="/panel/embudos" variant="tinted" icon="funnel">
+              Ir a embudos
+            </Button>
+          }
+        />
+      )}
     </div>
   );
 }

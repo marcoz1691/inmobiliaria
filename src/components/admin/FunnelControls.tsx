@@ -1,13 +1,15 @@
 "use client";
 import { useId, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/admin/ui/Button";
+import { useToast } from "@/components/admin/ui/Toast";
 import { createFunnelAction, setFunnelStatusAction } from "@/app/panel/(app)/embudos/actions";
 import { inputClass, selectClass } from "./fields";
 
 export function CreateFunnel({ templates }: { templates: { key: string; name: string; description: string }[] }) {
   const id = useId();
   const router = useRouter();
+  const toast = useToast();
   const [template, setTemplate] = useState(templates[0]?.key ?? "");
   const [slug, setSlug] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +24,7 @@ export function CreateFunnel({ templates }: { templates: { key: string; name: st
           if (r.ok) {
             setSlug("");
             setError(null);
+            toast.success("Embudo creado.");
             router.refresh();
           } else setError(r.error);
         });
@@ -66,7 +69,7 @@ export function CreateFunnel({ templates }: { templates: { key: string; name: st
         ) : null}
       </div>
       <div className="sm:col-span-2">
-        <Button type="submit" disabled={pending || slug.length < 3}>
+        <Button type="submit" pending={pending} disabled={slug.length < 3} className="w-full sm:w-auto">
           {pending ? "Creando…" : "Crear embudo"}
         </Button>
       </div>
@@ -76,19 +79,23 @@ export function CreateFunnel({ templates }: { templates: { key: string; name: st
 
 export function FunnelStatusToggle({ id, status, name }: { id: string; status: "draft" | "active" | "paused"; name: string }) {
   const router = useRouter();
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
   const next = status === "active" ? "paused" : "active";
   return (
     <div>
       <Button
-        variant={status === "active" ? "secondary" : "primary"}
-        disabled={pending}
+        variant={status === "active" ? "gray" : "filled"}
+        pending={pending}
         onClick={() =>
           start(async () => {
             const r = await setFunnelStatusAction(id, next);
             setError(r.ok ? null : r.error);
-            if (r.ok) router.refresh();
+            if (r.ok) {
+              toast.success(next === "active" ? `«${name}» está activo.` : `«${name}» está pausado.`);
+              router.refresh();
+            }
           })
         }
       >
@@ -107,6 +114,7 @@ export function FunnelStatusToggle({ id, status, name }: { id: string; status: "
 /** Ad link with UTM parameters. Values are normalised so reports group them consistently. */
 export function UtmBuilder({ baseUrl }: { baseUrl: string }) {
   const id = useId();
+  const toast = useToast();
   const [source, setSource] = useState("facebook");
   const [campaign, setCampaign] = useState("");
   const [content, setContent] = useState("");
@@ -123,6 +131,7 @@ export function UtmBuilder({ baseUrl }: { baseUrl: string }) {
     try {
       await navigator.clipboard.writeText(link);
       setCopied("Enlace copiado.");
+      toast.success("Enlace copiado.");
     } catch {
       setCopied("No se pudo copiar automáticamente: selecciona el enlace y cópialo.");
     }
@@ -149,11 +158,11 @@ export function UtmBuilder({ baseUrl }: { baseUrl: string }) {
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <input id={`${id}-out`} readOnly value={link} className={`${inputClass} mt-0 font-mono text-sm`} onFocus={(e) => e.currentTarget.select()} />
-        <Button variant="secondary" onClick={() => void copy()}>
+        <Button variant="gray" icon="copy" onClick={() => void copy()} className="w-full sm:w-auto">
           Copiar enlace
         </Button>
       </div>
-      <p role="status" className="text-sm text-ink-muted">
+      <p role="status" className="text-sm text-ink-muted empty:hidden">
         {copied}
       </p>
     </div>

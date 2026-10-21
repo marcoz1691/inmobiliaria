@@ -1,7 +1,10 @@
 "use client";
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/admin/ui/Button";
+import { Icon } from "@/components/admin/ui/Icon";
+import { ListGroup, ListItem } from "@/components/admin/ui/ListGroup";
+import { useToast } from "@/components/admin/ui/Toast";
 import { saveAvailabilityAction } from "@/app/panel/(app)/agenda/actions";
 import { inputClass } from "./fields";
 
@@ -28,6 +31,7 @@ const toMin = (t: string) => {
 /** Weekly availability editor. Starts empty: the agent defines every range, nothing is assumed. */
 export function WeeklyHours({ initial }: { initial: Rule[] }) {
   const router = useRouter();
+  const toast = useToast();
   const [days, setDays] = useState<Record<number, Range[]>>(() => {
     const out: Record<number, Range[]> = {};
     for (const d of DAYS) out[d.n] = [];
@@ -60,16 +64,19 @@ export function WeeklyHours({ initial }: { initial: Rule[] }) {
       }
     start(async () => {
       const r = await saveAvailabilityAction(rules);
-      setMsg(r.ok ? { text: rules.length ? "Horario guardado." : "Horario vacío guardado: no se ofrecerán citas." } : { text: r.error, error: true });
-      if (r.ok) router.refresh();
+      if (r.ok) {
+        setMsg(null);
+        toast.success(rules.length ? "Horario guardado." : "Horario vacío guardado: no se ofrecerán citas.");
+        router.refresh();
+      } else setMsg({ text: r.error, error: true });
     });
   }
 
   return (
     <div>
-      <ul className="divide-y divide-line border-y border-line">
+      <ListGroup aria-label="Horario semanal de atención">
         {DAYS.map((d) => (
-          <li key={d.n} className="py-3">
+          <ListItem key={d.n} className="px-4 py-3">
             <fieldset>
               <legend className="text-base font-medium text-ink">{d.label}</legend>
               {days[d.n]!.length === 0 ? <p className="mt-1 text-sm text-ink-muted">Sin atención</p> : null}
@@ -77,13 +84,19 @@ export function WeeklyHours({ initial }: { initial: Rule[] }) {
                 <div key={r.key} className="mt-2 flex flex-wrap items-end gap-2">
                   <div>
                     <label htmlFor={`${r.key}-s`} className="block text-xs text-ink-muted">
-                      Desde <span className="sr-only">({d.label}, franja {i + 1})</span>
+                      Desde{" "}
+                      <span className="sr-only">
+                        ({d.label}, franja {i + 1})
+                      </span>
                     </label>
                     <input id={`${r.key}-s`} type="time" step={900} value={r.start} className={`${inputClass} mt-0.5 w-32`} onChange={(e) => update(d.n, (x) => x.map((y) => (y.key === r.key ? { ...y, start: e.target.value } : y)))} />
                   </div>
                   <div>
                     <label htmlFor={`${r.key}-e`} className="block text-xs text-ink-muted">
-                      Hasta <span className="sr-only">({d.label}, franja {i + 1})</span>
+                      Hasta{" "}
+                      <span className="sr-only">
+                        ({d.label}, franja {i + 1})
+                      </span>
                     </label>
                     <input id={`${r.key}-e`} type="time" step={900} value={r.end} className={`${inputClass} mt-0.5 w-32`} onChange={(e) => update(d.n, (x) => x.map((y) => (y.key === r.key ? { ...y, end: e.target.value } : y)))} />
                   </div>
@@ -93,28 +106,27 @@ export function WeeklyHours({ initial }: { initial: Rule[] }) {
                     aria-label={`Quitar franja ${i + 1} del ${d.label.toLowerCase()}`}
                     onClick={() => update(d.n, (x) => x.filter((y) => y.key !== r.key))}
                   >
-                    <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6">
-                      <path d="m5 5 10 10M15 5 5 15" />
-                    </svg>
+                    <Icon name="x" className="size-5" strokeWidth={1.8} />
                   </button>
                 </div>
               ))}
-              <button
-                type="button"
-                className="mt-2 min-h-11 rounded-full px-3 text-sm font-medium text-navy underline underline-offset-4 hover:bg-ink/5"
+              <Button
+                variant="plain"
+                size="sm"
+                className="mt-1 -ml-2"
                 onClick={() => update(d.n, (x) => [...x, { key: crypto.randomUUID(), start: "", end: "" }])}
               >
                 Agregar franja<span className="sr-only"> al {d.label.toLowerCase()}</span>
-              </button>
+              </Button>
             </fieldset>
-          </li>
+          </ListItem>
         ))}
-      </ul>
-      <div className="mt-4 flex flex-wrap items-center gap-3">
-        <Button onClick={save} disabled={pending}>
+      </ListGroup>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button onClick={save} pending={pending} className="w-full sm:w-auto">
           {pending ? "Guardando…" : "Guardar horario"}
         </Button>
-        <p role="status" className={msg?.error ? "text-sm font-medium text-sold" : "text-sm text-available"}>
+        <p role="status" className={msg?.error ? "text-sm font-medium text-sold" : "text-sm text-ink-muted empty:hidden"}>
           {msg?.text}
         </p>
       </div>

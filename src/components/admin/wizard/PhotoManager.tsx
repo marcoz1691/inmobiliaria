@@ -14,8 +14,12 @@ import {
 import { SortableContext, arrayMove, rectSortingStrategy, sortableKeyboardCoordinates, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { cn } from "@/components/ui/cn";
-import { Button } from "@/components/ui/Button";
+import { Button } from "../ui/Button";
+import { Icon } from "../ui/Icon";
+import { card } from "../ui/ListGroup";
+import { press, tap } from "../ui/motion";
 import { ConfirmDialog } from "../ConfirmDialog";
+import { inputClass } from "../fields";
 import { compressImage, runLimited, uploadWithProgress } from "./upload";
 import { removePhotoAction, reorderPhotosAction, setCoverAction, updatePhotoAltAction } from "@/app/panel/(app)/propiedades/actions";
 
@@ -127,9 +131,12 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
 
   return (
     <div>
-      <div className="rounded-sm border border-dashed border-line-strong bg-white p-5 text-center sm:p-8">
-        <p className="font-display text-xl text-ink">Agrega fotos desde tu cámara o galería</p>
-        <p className="mt-1 text-sm text-ink-muted" id={`${id}-help`}>
+      <div className={cn(card, "flex flex-col items-center px-5 py-7 text-center sm:py-9")}>
+        <span aria-hidden="true" className="grid size-14 place-items-center rounded-full bg-navy/10 text-navy">
+          <Icon name="camera" className="size-7" />
+        </span>
+        <p className="mt-3 text-headline text-ink">Agrega fotos desde tu cámara o galería</p>
+        <p className="mt-1 max-w-md text-[0.9375rem] text-ink-muted" id={`${id}-help`}>
           Puedes elegir varias a la vez. Las reducimos en tu teléfono antes de subirlas para ahorrar datos.
         </p>
         <input
@@ -144,14 +151,16 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
         />
         <label
           htmlFor={`${id}-input`}
-          className="mt-4 inline-flex min-h-12 cursor-pointer items-center justify-center rounded-full bg-navy px-6 text-base font-medium text-white hover:bg-navy-hover peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-navy"
+          className={cn("mt-5 inline-flex min-h-12 cursor-pointer items-center justify-center gap-2 rounded-full bg-navy px-6 text-[1.0625rem] font-medium text-white hover:bg-navy-hover peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-navy", tap, press)}
         >
+          <Icon name="photo" className="size-5" strokeWidth={1.9} />
           Elegir fotos
         </label>
       </div>
 
       {error ? (
-        <p role="alert" className="mt-3 text-sm font-medium text-sold">
+        <p role="alert" className="mt-3 flex items-center gap-1.5 text-sm font-medium text-sold">
+          <Icon name="alert" className="size-4 shrink-0" strokeWidth={2} />
           {error}
         </p>
       ) : null}
@@ -160,19 +169,19 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
       </p>
 
       {uploads.length ? (
-        <ul className="mt-5 space-y-3" aria-label="Fotos en proceso">
+        <ul className={cn(card, "mt-4 overflow-hidden")} aria-label="Fotos en proceso">
           {uploads.map((u) => (
-            <li key={u.key} className="flex items-center gap-3 rounded-sm border border-line bg-white p-2">
+            <li key={u.key} className="relative flex items-center gap-3 px-3 py-2.5 not-first:before:absolute not-first:before:inset-x-3 not-first:before:top-0 not-first:before:h-px not-first:before:bg-line sm:px-4">
               {/* eslint-disable-next-line @next/next/no-img-element -- local object URL preview */}
-              <img src={u.preview} alt="" className="size-14 shrink-0 rounded-xs object-cover" />
+              <img src={u.preview} alt="" className="size-12 shrink-0 rounded-xs object-cover" />
               <div className="min-w-0 flex-1">
-                <p className="truncate text-sm text-ink">{u.name}</p>
+                <p className="truncate text-[0.9375rem] text-ink">{u.name}</p>
                 {u.status === "error" ? (
                   <p className="text-sm text-sold">{u.error}</p>
                 ) : (
                   <>
                     <progress
-                      className="mt-1 h-1.5 w-full overflow-hidden rounded-full [&::-moz-progress-bar]:bg-navy [&::-webkit-progress-bar]:bg-sand [&::-webkit-progress-value]:bg-navy"
+                      className="mt-1.5 h-1 w-full appearance-none overflow-hidden rounded-full bg-ink/10 [&::-moz-progress-bar]:rounded-full [&::-moz-progress-bar]:bg-navy [&::-webkit-progress-bar]:bg-ink/10 [&::-webkit-progress-value]:rounded-full [&::-webkit-progress-value]:bg-navy [&::-webkit-progress-value]:transition-[width] [&::-webkit-progress-value]:duration-300"
                       max={1}
                       value={u.status === "compressing" ? undefined : u.progress}
                       aria-label={`Progreso de ${u.name}`}
@@ -183,18 +192,16 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
               </div>
               {u.status === "error" ? (
                 <div className="flex shrink-0 gap-1">
-                  <Button variant="secondary" onClick={() => void uploadOne(u)} disabled={!u.blob}>
+                  <Button variant="tinted" size="sm" onClick={() => void uploadOne(u)} disabled={!u.blob}>
                     Reintentar
                   </Button>
                   <button
                     type="button"
-                    className="grid size-11 place-items-center rounded-full text-ink hover:bg-ink/5"
+                    className={cn("grid size-11 place-items-center rounded-full text-ink-muted hover:bg-ink/5 hover:text-ink", tap)}
                     aria-label={`Descartar ${u.name}`}
                     onClick={() => setUploads((x) => x.filter((y) => y.key !== u.key))}
                   >
-                    <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6">
-                      <path d="m5 5 10 10M15 5 5 15" />
-                    </svg>
+                    <Icon name="x" className="size-5" />
                   </button>
                 </div>
               ) : null}
@@ -205,10 +212,17 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
 
       {photos.length ? (
         <>
-          <p className="mt-6 text-sm text-ink-muted" id={`${id}-sort-help`}>
+          <div className="mt-7 flex items-baseline justify-between gap-3">
+            <h2 className="text-headline text-ink">Tus fotos</h2>
+            <p className="text-sm text-ink-muted tabular-nums">
+              {photos.length} de {MAX_FILES}
+            </p>
+          </div>
+          <p className="mt-1 text-sm text-ink-muted" id={`${id}-sort-help`}>
             La primera foto es la portada. Arrastra desde el asa, usa las flechas o «Usar como portada» para cambiar el orden.
           </p>
           <DndContext
+            id={`${id}-dnd`}
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={onDragEnd}
@@ -225,7 +239,7 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
             }}
           >
             <SortableContext items={photos.map((p) => p.id)} strategy={rectSortingStrategy}>
-              <ol className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-describedby={`${id}-sort-help`} data-testid="photo-list">
+              <ol className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3" aria-describedby={`${id}-sort-help`} data-testid="photo-list">
                 {photos.map((p, i) => (
                   <SortablePhoto
                     key={p.id}
@@ -246,7 +260,10 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
           </DndContext>
         </>
       ) : uploads.length === 0 ? (
-        <p className="mt-6 text-sm text-ink-muted">Aún no hay fotos. Necesitas al menos una para publicar; lo ideal son 8 a 15.</p>
+        <p className="mt-4 flex items-center justify-center gap-1.5 text-center text-sm text-ink-muted">
+          <Icon name="info" className="size-4 shrink-0" />
+          Aún no hay fotos. Necesitas al menos una para publicar; lo ideal son 8 a 15.
+        </p>
       ) : null}
     </div>
   );
@@ -272,16 +289,16 @@ function SortablePhoto({
   const [altError, setAltError] = useState<string | null>(null);
   const altId = `alt-${photo.id}`;
   const n = index + 1;
-  const iconBtn = "grid size-11 shrink-0 place-items-center rounded-full text-ink hover:bg-ink/5 disabled:opacity-40";
+  const iconBtn = cn("grid size-11 shrink-0 place-items-center rounded-full text-ink hover:bg-ink/[0.06] disabled:text-ink/25 disabled:hover:bg-transparent", tap);
 
   return (
     <li
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={cn("flex gap-3 rounded-sm border bg-white p-2 sm:flex-col", isDragging ? "z-10 border-navy shadow-md" : "border-line")}
+      className={cn(card, "flex gap-3 p-2 transition-shadow duration-200 sm:flex-col sm:p-2.5", isDragging && "relative z-10 shadow-[0_18px_40px_-12px_rgba(0,0,0,0.3)] ring-2 ring-navy")}
       data-photo-id={photo.id}
     >
-      <div className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-xs bg-sand sm:w-full">
+      <div className="relative aspect-[4/3] w-28 shrink-0 self-start overflow-hidden rounded-xs bg-mist sm:w-full">
         <Image src={photo.src} alt={photo.alt ?? ""} fill sizes="(min-width: 640px) 33vw, 112px" className="object-cover" />
         <button
           type="button"
@@ -289,23 +306,19 @@ function SortablePhoto({
           {...attributes}
           {...listeners}
           aria-label={`Mover foto ${n} de ${total}`}
-          className="absolute top-1 right-1 grid size-11 cursor-grab touch-none place-items-center rounded-full bg-paper/90 text-ink active:cursor-grabbing"
+          className="absolute top-1 right-1 grid size-11 cursor-grab touch-none place-items-center rounded-full bg-white/80 text-ink shadow-sm backdrop-blur-md active:cursor-grabbing"
         >
-          <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="currentColor">
-            <circle cx="7" cy="5" r="1.4" />
-            <circle cx="13" cy="5" r="1.4" />
-            <circle cx="7" cy="10" r="1.4" />
-            <circle cx="13" cy="10" r="1.4" />
-            <circle cx="7" cy="15" r="1.4" />
-            <circle cx="13" cy="15" r="1.4" />
-          </svg>
+          <Icon name="grip" className="size-5" />
         </button>
         {photo.isCover ? (
-          <span className="absolute bottom-1 left-1 rounded-xs bg-ink px-2 py-1 text-xs font-medium text-paper">Portada</span>
+          <span className="absolute bottom-1.5 left-1.5 inline-flex items-center gap-1 rounded-full bg-ink/75 px-2 py-0.5 text-xs font-semibold text-white backdrop-blur-md">
+            <Icon name="star" className="size-3" strokeWidth={2.4} />
+            Portada
+          </span>
         ) : null}
       </div>
       <div className="min-w-0 flex-1">
-        <label htmlFor={altId} className="block text-xs font-medium text-ink">
+        <label htmlFor={altId} className="block text-[0.8125rem] font-medium text-ink">
           Descripción de la foto {n} <span className="font-normal text-ink-muted">(opcional)</span>
         </label>
         <input
@@ -320,7 +333,7 @@ function SortablePhoto({
           }}
           aria-invalid={altError ? true : undefined}
           aria-describedby={altError ? `${altId}-e` : undefined}
-          className="mt-1 block min-h-11 w-full rounded-sm border border-line-strong bg-white px-2 text-sm text-ink"
+          className={inputClass}
         />
         {altError ? (
           <p id={`${altId}-e`} className="mt-1 text-xs text-sold">
@@ -329,17 +342,13 @@ function SortablePhoto({
         ) : null}
         <div className="mt-1 flex flex-wrap items-center">
           <button type="button" className={iconBtn} onClick={() => onMove(index, index - 1)} disabled={index === 0} aria-label={`Mover foto ${n} antes`}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path d="M12.5 4.5 7 10l5.5 5.5" />
-            </svg>
+            <Icon name="chevronLeft" className="size-5" strokeWidth={2} />
           </button>
           <button type="button" className={iconBtn} onClick={() => onMove(index, index + 1)} disabled={index === total - 1} aria-label={`Mover foto ${n} después`}>
-            <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6">
-              <path d="M7.5 4.5 13 10l-5.5 5.5" />
-            </svg>
+            <Icon name="chevronRight" className="size-5" strokeWidth={2} />
           </button>
           {!photo.isCover ? (
-            <button type="button" className="min-h-11 rounded-full px-3 text-sm text-ink underline-offset-4 hover:bg-ink/5 hover:underline" onClick={() => onMove(index, 0)}>
+            <button type="button" className={cn("min-h-11 rounded-full px-3 text-sm font-medium text-navy hover:bg-navy/[0.07]", tap)} onClick={() => onMove(index, 0)}>
               Usar como portada<span className="sr-only"> (foto {n})</span>
             </button>
           ) : null}
@@ -350,10 +359,8 @@ function SortablePhoto({
             confirmLabel="Eliminar foto"
             onConfirm={onRemove}
             trigger={(open) => (
-              <button type="button" className={cn(iconBtn, "ml-auto text-sold")} onClick={open} aria-label={`Eliminar foto ${n}`}>
-                <svg aria-hidden="true" viewBox="0 0 20 20" className="size-5" fill="none" stroke="currentColor" strokeWidth="1.6">
-                  <path d="M4 6h12M8 6V4h4v2m-6 0 .7 10h6.6L14 6" />
-                </svg>
+              <button type="button" className={cn(iconBtn, "ml-auto text-sold hover:bg-sold/[0.08]")} onClick={open} aria-label={`Eliminar foto ${n}`}>
+                <Icon name="trash" className="size-5" />
               </button>
             )}
           />

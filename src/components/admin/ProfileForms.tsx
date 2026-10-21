@@ -2,7 +2,8 @@
 import { useId, useState, useTransition } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/Button";
+import { Button } from "@/components/admin/ui/Button";
+import { useToast } from "@/components/admin/ui/Toast";
 import { saveProfileAction, saveSiteAction } from "@/app/panel/(app)/perfil/actions";
 import { Field, describedBy, inputClass } from "./fields";
 import { compressImage, uploadWithProgress } from "./wizard/upload";
@@ -34,6 +35,7 @@ type Errors = Record<string, string[] | undefined>;
 
 export function ProfileForm({ initial, socialKeys }: { initial: ProfileValues; socialKeys: string[] }) {
   const router = useRouter();
+  const toast = useToast();
   const [v, setV] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
@@ -72,6 +74,7 @@ export function ProfileForm({ initial, socialKeys }: { initial: ProfileValues; s
           if (r.ok) {
             setErrors({});
             setMsg({ text: "Perfil guardado. Tu sitio ya muestra los cambios." });
+            toast.success("Perfil guardado.");
             router.refresh();
           } else {
             const fe: Errors = { ...(r.fieldErrors ?? {}) };
@@ -94,7 +97,7 @@ export function ProfileForm({ initial, socialKeys }: { initial: ProfileValues; s
       </div>
       {text("affiliation", "Afiliación o marca", { optional: true, hint: "Solo si estás autorizado a usar esa marca. Si lo dejas vacío, no se muestra ninguna." })}
       <fieldset>
-        <legend className="font-display text-xl text-ink">Redes</legend>
+        <legend className="text-[1.125rem] font-semibold tracking-[-0.015em] text-ink">Redes</legend>
         <p className="mt-1 text-sm text-ink-muted">Enlaces completos que empiecen con https://. Las vacías no se muestran.</p>
         {errors.socials ? <p className="mt-1 text-sm font-medium text-sold">{errors.socials[0] ?? "Revisa los enlaces"}</p> : null}
         <div className="mt-3 grid gap-4 sm:grid-cols-2">
@@ -117,8 +120,8 @@ export function ProfileForm({ initial, socialKeys }: { initial: ProfileValues; s
           ))}
         </div>
       </fieldset>
-      <div className="flex flex-wrap items-center gap-3 border-t border-line pt-5">
-        <Button type="submit" disabled={pending}>
+      <div className="flex flex-col gap-3 border-t border-line pt-5 sm:flex-row sm:flex-wrap sm:items-center">
+        <Button type="submit" pending={pending} className="w-full sm:w-auto">
           {pending ? "Guardando…" : "Guardar perfil"}
         </Button>
         <p role="status" className={msg?.error ? "text-sm font-medium text-sold" : "text-sm text-available"}>
@@ -132,6 +135,7 @@ export function ProfileForm({ initial, socialKeys }: { initial: ProfileValues; s
 export function ProfilePhoto({ src, name }: { src: string | null; name: string }) {
   const id = useId();
   const router = useRouter();
+  const toast = useToast();
   const [preview, setPreview] = useState<string | null>(src);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -147,6 +151,7 @@ export function ProfilePhoto({ src, name }: { src: string | null; name: string }
     setProgress(null);
     if (r.ok) {
       setPreview(r.data.photoUrl);
+      toast.success("Foto actualizada.");
       router.refresh();
     } else setError(r.error);
   }
@@ -160,7 +165,7 @@ export function ProfilePhoto({ src, name }: { src: string | null; name: string }
         <input id={id} type="file" accept="image/*" className="peer sr-only" onChange={(e) => void onFile(e.currentTarget.files?.[0])} aria-describedby={`${id}-h`} />
         <label
           htmlFor={id}
-          className="inline-flex min-h-11 cursor-pointer items-center rounded-full border border-ink/80 px-5 text-sm font-medium text-ink hover:bg-ink hover:text-paper peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-navy"
+          className="inline-flex min-h-11 cursor-pointer items-center justify-center rounded-full bg-ink/[0.06] px-5 text-[0.9375rem] font-medium text-ink hover:bg-ink/10 peer-focus-visible:outline-2 peer-focus-visible:outline-offset-3 peer-focus-visible:outline-navy"
         >
           {preview ? "Cambiar foto" : "Subir foto"}
         </label>
@@ -184,6 +189,7 @@ export function ProfilePhoto({ src, name }: { src: string | null; name: string }
 
 export function SiteForm({ initial, canEdit }: { initial: { name: string; tagline: string }; canEdit: boolean }) {
   const router = useRouter();
+  const toast = useToast();
   const [v, setV] = useState(initial);
   const [errors, setErrors] = useState<Errors>({});
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
@@ -217,6 +223,7 @@ export function SiteForm({ initial, canEdit }: { initial: { name: string; taglin
           if (r.ok) {
             setErrors({});
             setMsg({ text: "Sitio actualizado." });
+            toast.success("Sitio actualizado.");
             router.refresh();
           } else {
             setErrors(r.fieldErrors ?? {});
@@ -228,8 +235,8 @@ export function SiteForm({ initial, canEdit }: { initial: { name: string; taglin
       {f("name", "Nombre del sitio", "Aparece en la cabecera y en el título de las páginas.")}
       {f("tagline", "Frase corta", "Ej.: «Casas y departamentos en Quito y los valles»." )}
       {canEdit ? (
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" variant="secondary" disabled={pending}>
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <Button type="submit" variant="tinted" pending={pending} className="w-full sm:w-auto">
             {pending ? "Guardando…" : "Guardar sitio"}
           </Button>
           <p role="status" className={msg?.error ? "text-sm font-medium text-sold" : "text-sm text-available"}>
