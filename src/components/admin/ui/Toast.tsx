@@ -17,7 +17,7 @@ export const useToast = () => useContext(ToastContext);
 const ICON: Record<Tone, { name: "checkCircle" | "alert" | "info"; className: string }> = {
   success: { name: "checkCircle", className: "text-available" },
   error: { name: "alert", className: "text-sold" },
-  info: { name: "info", className: "text-navy" },
+  info: { name: "info", className: "text-navy-hover" },
 };
 
 /**

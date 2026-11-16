@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" role="img" aria-label="Encasa">
+  <title>Encasa</title>
+  <!-- Mark: a map pin with a roof inside: find a home anywhere in the country. -->
+  <rect x="0" y="0" width="96" height="96" rx="24" fill="#0E9F6E"/>
+  <path d="M48 80s-22-20-22-38a22 22 0 0 1 44 0c0 18-22 38-22 38Z" fill="#fff"/>
+  <path d="M37 46 48 37l11 9v10H37Z" fill="#0E9F6E"/>
+  <text x="120" y="66" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#0F172A">encasa</text>
+</svg>

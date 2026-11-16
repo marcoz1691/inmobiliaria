@@ -29,7 +29,8 @@ test("publish a property from the wizard, pause it, duplicate and archive", asyn
   await page.getByLabel("Tipo de propiedad").selectOption("house");
   await page.getByText("Venta", { exact: true }).click();
   await page.getByLabel("Precio (US$)").fill("185.000");
-  await page.getByLabel("Ciudad").fill("Quito");
+  await page.getByLabel("Provincia").selectOption({ label: "Pichincha" });
+  await page.getByLabel("Ciudad o cantón").selectOption("quito");
   await page.getByLabel("Sector o barrio (opcional)").fill("Cumbayá");
   await page.getByRole("button", { name: "Siguiente: Fotos" }).click();
   await expect(page).toHaveURL(/\/panel\/propiedades\/[0-9a-f-]{36}\?paso=fotos$/, { timeout: 60_000 });
@@ -121,9 +122,12 @@ test("autosave keeps edits and flags invalid numbers", async ({ page }) => {
   await expect(page.getByText("Escribe solo el número, por ejemplo 110000.")).toBeVisible();
   await expect(page.getByLabel("Precio (US$)")).toHaveAttribute("aria-invalid", "true");
   await page.getByLabel("Precio (US$)").fill("99000");
-  await page.getByLabel("Ciudad").fill("Guayaquil");
+  // Changing the province clears a city that does not belong to it.
+  await page.getByLabel("Provincia").selectOption({ label: "Guayas" });
+  await expect(page.getByLabel("Ciudad o cantón")).toHaveValue("");
+  await page.getByLabel("Ciudad o cantón").selectOption({ label: "Guayaquil" });
   await expect(page.getByRole("status").filter({ hasText: "Guardado" })).toBeVisible({ timeout: 20_000 });
   await page.reload();
   await expect(page.getByLabel("Precio (US$)")).toHaveValue("99000");
-  await expect(page.getByLabel("Ciudad")).toHaveValue("Guayaquil");
+  await expect(page.getByLabel("Ciudad o cantón")).toHaveValue("guayaquil");
 });

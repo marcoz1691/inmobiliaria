@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 96" role="img" aria-label="Habitara">
+  <title>Habitara</title>
+  <!-- Mark: an "h" whose shoulder is a roof line. -->
+  <rect x="0" y="0" width="96" height="96" rx="24" fill="#C2410C"/>
+  <path d="M30 74V22M30 50l18-14 18 14v24" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="120" y="66" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#0F172A">habitara</text>
+</svg>

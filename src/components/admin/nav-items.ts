@@ -8,6 +8,7 @@ export const PANEL_NAV: PanelNavItem[] = [
   { href: "/panel/agenda", label: "Agenda", icon: "calendar", section: "general", primary: true },
   { href: "/panel/importar", label: "Importar PDF", icon: "docImport", section: "capture" },
   { href: "/panel/embudos", label: "Embudos", icon: "funnel", section: "capture" },
+  { href: "/panel/plan", label: "Tu plan", icon: "star", section: "account" },
   { href: "/panel/perfil", label: "Perfil y marca", icon: "person", section: "account" },
   { href: "/panel/integraciones", label: "Integraciones", icon: "plug", section: "account" },
 ];

@@ -1,6 +1,6 @@
 /**
  * Idempotent seed for the pilot tenant.
- * - Creates the tenant, localhost domains, owner account, membership and agent profile.
+ * - Creates the tenant, its SEED_TENANT_DOMAINS (if any), owner account, membership and agent profile.
  * - Registers WHATSAPP_PHONE_NUMBER_ID (when set) as the tenant's WhatsApp channel account.
  * - Uploads the agent photo from assets-input/perfil/foto-agente.jpeg when present.
  * Never invents personal data: contact fields stay empty until filled in the panel.
@@ -16,7 +16,8 @@ import { processImage } from "../src/modules/media/process";
 
 const TENANT_SLUG = process.env.DEFAULT_TENANT_SLUG ?? "piloto";
 const OWNER_EMAIL = process.env.SEED_OWNER_EMAIL ?? "agente@piloto.test";
-const PHOTO = "assets-input/perfil/foto-agente.jpeg";
+// Empty SEED_AGENT_PHOTO skips the portrait (public test environments).
+const PHOTO = process.env.SEED_AGENT_PHOTO ?? "assets-input/perfil/foto-agente.jpeg";
 
 // No default credentials in code: use SEED_OWNER_PASSWORD, or generate one shown once on first seed.
 const OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD || randomBytes(12).toString("base64url");
@@ -30,8 +31,13 @@ export async function seed() {
     [tenant] = await db.insert(tenants).values({ slug: TENANT_SLUG, name: "Agente inmobiliario" }).returning();
   }
   const tenantId = tenant!.id;
+  // SEED_PLAN gives the pilot a paid plan (e2e and demo environments publish many listings).
+  if (process.env.SEED_PLAN) await db.update(tenants).set({ plan: process.env.SEED_PLAN }).where(eq(tenants.id, tenantId));
 
-  for (const domain of ["localhost", "127.0.0.1"]) {
+  // Hosts that serve this agent's own site (comma-separated). Without them, localhost is the
+  // portal and the pilot's site lives at <slug>.localhost (TENANT_BASE_DOMAIN).
+  const domains = (process.env.SEED_TENANT_DOMAINS ?? "").split(",").map((d) => d.trim().toLowerCase()).filter(Boolean);
+  for (const domain of domains) {
     await db.insert(tenantDomains).values({ domain, tenantId }).onConflictDoNothing();
   }
 
@@ -60,7 +66,7 @@ export async function seed() {
       .returning();
   }
 
-  if (!agent!.photoUrl && existsSync(PHOTO)) {
+  if (!agent!.photoUrl && PHOTO && existsSync(PHOTO)) {
     const { getStorage } = await import("../src/modules/media/storage");
     const storage = getStorage();
     const processed = await processImage(await readFile(PHOTO));

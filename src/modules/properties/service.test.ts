@@ -41,6 +41,25 @@ describe("properties service", () => {
     expect(catalog.items[0]?.cover?.src).toMatch(/^media:/);
   });
 
+  it("filters by city slug and reports facets of live listings only", async () => {
+    const p = await svc.createDraft(mA, "Oficina en el centro norte");
+    await svc.updateDraft(mA, p.id, { operation: "rent", propertyType: "office", price: 900, city: "Santo Domingo" });
+    await svc.addPhoto(mA, p.id, await jpeg());
+    await svc.changeStatus(mA, p.id, "published");
+    await svc.createDraft(mA, "Borrador que no cuenta");
+
+    const bySlug = await svc.listCatalog(A.tenant.id, { city: "santo-domingo" });
+    expect(bySlug.items.map((i) => i.slug)).toEqual([p.slug]);
+    expect((await svc.listCatalog(A.tenant.id, { city: "SANTO DOMINGO", operation: "rent" })).total).toBe(1);
+    expect((await svc.listCatalog(A.tenant.id, { city: "guayaquil" })).total).toBe(0);
+    expect((await svc.listCatalog(A.tenant.id, { city: "%" })).total).toBe(0);
+
+    const facets = await svc.listCatalogFacets(A.tenant.id);
+    expect(facets).toContainEqual({ operation: "rent", type: "office", city: "Santo Domingo", province: null, count: 1 });
+    expect(facets.reduce((n, f) => n + f.count, 0)).toBe((await svc.listCatalog(A.tenant.id, {})).total);
+    expect(await svc.listCatalogFacets(B.tenant.id)).toEqual([]);
+  });
+
   it("blocks horizontal access across tenants", async () => {
     const p = await svc.createDraft(mA, "Privada de A");
     await expect(svc.getForEdit(mB, p.id)).rejects.toMatchObject({ code: "not_found" });

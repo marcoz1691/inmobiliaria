@@ -90,7 +90,7 @@ export function NewPropertyForm() {
         {STEPS.map((s, i) => (
           <li key={s.key} className="min-w-0">
             <span className={cn("block h-1 rounded-full", i === 0 ? "bg-navy" : "bg-ink/10")} />
-            <span className={cn("mt-1.5 block truncate text-xs font-medium", i === 0 ? "text-navy" : "text-ink-muted")}>{s.label}</span>
+            <span className={cn("mt-1.5 block truncate text-xs font-medium", i === 0 ? "text-navy-hover" : "text-ink-muted")}>{s.label}</span>
           </li>
         ))}
       </ol>

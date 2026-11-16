@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { MobileNav } from "./MobileNav";
 
@@ -15,6 +16,8 @@ type SiteHeaderProps = {
   ctaLabel?: string;
   /** id of the page's main element, target of the skip link. */
   mainId?: string;
+  /** Logo shown instead of the plain name (the portal's brand). The name stays as accessible text. */
+  logo?: ReactNode;
 };
 
 /** Sticky translucent bar: content scrolls underneath, blurred, like a native toolbar. */
@@ -26,9 +29,12 @@ export function SiteHeader({
   ctaHref,
   ctaLabel = "Agenda una cita",
   mainId = "contenido",
+  logo,
 }: SiteHeaderProps) {
   // The call to action already has its own pill; don't repeat it as a plain link.
   const links = nav.filter((item) => item.href !== ctaHref);
+  // Longer menus (the portal's) switch to the full bar only when there is room for it.
+  const roomy = links.length > 3;
   return (
     <header className="glass sticky top-0 z-40 border-b border-ink/10">
       <a
@@ -39,13 +45,13 @@ export function SiteHeader({
       </a>
       <div className="mx-auto flex h-13 max-w-7xl items-center justify-between gap-6 px-5 sm:px-8 lg:px-12">
         <Link href={homeHref} className="flex min-h-11 min-w-0 items-center gap-3 rounded-xs">
-          <span className="truncate text-[1.0625rem] font-semibold tracking-[-0.02em] text-ink">{name}</span>
+          {logo ?? <span className="truncate text-[1.0625rem] font-semibold tracking-[-0.02em] text-ink">{name}</span>}
           {tagline ? (
             <span className="hidden border-l border-line pl-3 text-xs text-ink-muted xl:inline">{tagline}</span>
           ) : null}
         </Link>
 
-        <nav aria-label="Principal" className="hidden md:block">
+        <nav aria-label="Principal" className={roomy ? "hidden lg:block" : "hidden md:block"}>
           <ul className="flex items-center">
             {links.map((item) => (
               <li key={item.href}>
@@ -60,13 +66,13 @@ export function SiteHeader({
           </ul>
         </nav>
 
-        <div className="hidden md:block">
+        <div className={roomy ? "hidden lg:block" : "hidden md:block"}>
           <Button href={ctaHref} className="px-4 text-sm">
             {ctaLabel}
           </Button>
         </div>
 
-        <MobileNav nav={links} ctaHref={ctaHref} ctaLabel={ctaLabel} />
+        <MobileNav nav={links} ctaHref={ctaHref} ctaLabel={ctaLabel} className={roomy ? "lg:hidden" : "md:hidden"} />
       </div>
     </header>
   );

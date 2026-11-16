@@ -18,7 +18,7 @@ export function SegmentedLinks({ label, options, className }: { label: string; o
             aria-current={o.active ? "true" : undefined}
             className={cn(
               "inline-flex min-h-11 items-center rounded-full px-5 text-[0.9375rem] font-medium transition-[background-color,color,box-shadow] duration-300 ease-apple",
-              o.active ? "bg-white text-ink shadow-[0_1px_4px_rgb(0_0_0/0.12)]" : "text-ink-muted hover:text-ink",
+              o.active ? "bg-white text-ink shadow-[0_1px_4px_rgb(0_0_0/0.12)]" : "text-ink/75 hover:text-ink",
             )}
           >
             {o.label}

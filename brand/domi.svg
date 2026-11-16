@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img" aria-label="Domi Propiedades">
+  <title>Domi Propiedades</title>
+  <!-- Mark: a doorway (domicilio) with a spark above it. -->
+  <rect x="0" y="0" width="96" height="96" rx="24" fill="#0B5FFF"/>
+  <path d="M34 74V44a14 14 0 0 1 28 0v30" fill="none" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M26 74h44" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M68 18l2.4 5.2L75.6 25.6l-5.2 2.4L68 33.2l-2.4-5.2L60.4 25.6l5.2-2.4Z" fill="#FFD166"/>
+  <text x="120" y="58" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="48" font-weight="700" letter-spacing="-1.5" fill="#0F172A">Domi</text>
+  <text x="122" y="84" font-family="Inter, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-size="17" font-weight="600" letter-spacing="3" fill="#6B7280">PROPIEDADES</text>
+</svg>

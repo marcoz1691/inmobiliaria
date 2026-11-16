@@ -1,5 +1,6 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { seedTenant, useTestDb } from "../../test/db";
+import { env } from "@/env";
 import { memberships, tenantDomains, user } from "./db/schema";
 
 // Request headers and the Better Auth session are the only inputs; both are controlled here.
@@ -45,7 +46,7 @@ describe("tenant and membership resolution by Host", () => {
 
   const tenantFor = async (host?: string, extra: Record<string, string> = {}) => {
     req.headers = new Headers({ ...(host ? { host } : {}), ...extra });
-    return (await (await tenantMod()).getCurrentTenant()).id;
+    return (await (await tenantMod()).getHostTenant())?.id ?? "portal";
   };
 
   it("maps a registered domain (any case, www., port) to its tenant", async () => {
@@ -53,28 +54,49 @@ describe("tenant and membership resolution by Host", () => {
     expect(await tenantFor("WWW.Otra-Agente.EC:443")).toBe(otra);
   });
 
-  it("unknown, missing or look-alike hosts fall back to the default tenant", async () => {
-    expect(await tenantFor("localhost:3200")).toBe(piloto);
-    expect(await tenantFor()).toBe(piloto);
-    expect(await tenantFor("evil.otra-agente.ec")).toBe(piloto);
-    expect(await tenantFor("otra-agente.ec.evil.com")).toBe(piloto);
-    expect(await tenantFor("otra-agente.ec'--")).toBe(piloto);
+  it("maps <slug>.<base domain> to that tenant, one label deep", async () => {
+    expect(await tenantFor("otra.localhost:3000")).toBe(otra);
+    expect(await tenantFor("piloto.localhost")).toBe(piloto);
+    expect(await tenantFor("nadie.localhost")).toBe("portal");
+    expect(await tenantFor("x.otra.localhost")).toBe("portal");
+  });
+
+  it("portal mode: unknown, missing or look-alike hosts serve the portal", async () => {
+    expect(await tenantFor("localhost:3200")).toBe("portal");
+    expect(await tenantFor()).toBe("portal");
+    expect(await tenantFor("evil.otra-agente.ec")).toBe("portal");
+    expect(await tenantFor("otra-agente.ec.evil.com")).toBe("portal");
+    expect(await tenantFor("otra-agente.ec'--")).toBe("portal");
+  });
+
+  it("single mode: unknown hosts fall back to the default tenant", async () => {
+    env.SITE_MODE = "single";
+    try {
+      expect(await tenantFor("localhost:3200")).toBe(piloto);
+      expect(await tenantFor()).toBe(piloto);
+      expect(await tenantFor("otra-agente.ec.evil.com")).toBe(piloto);
+    } finally {
+      env.SITE_MODE = "portal";
+    }
   });
 
   it("ignores client-controlled forwarding headers", async () => {
-    expect(await tenantFor("localhost", { "x-forwarded-host": "otra-agente.ec", "x-tenant-id": otra })).toBe(piloto);
+    expect(await tenantFor("localhost", { "x-forwarded-host": "otra-agente.ec", "x-tenant-id": otra })).toBe("portal");
+    expect(await tenantFor("piloto.localhost", { "x-forwarded-host": "otra-agente.ec" })).toBe(piloto);
   });
 
-  it("a session is a member only of the tenant serving the Host", async () => {
+  it("on an agent's domain a session counts only for that tenant; on the portal, for its own workspace", async () => {
     const { getMember } = await sessionMod();
     req.userId = "u-piloto";
-    req.headers = new Headers({ host: "localhost:3200" });
+    req.headers = new Headers({ host: "piloto.localhost:3200" });
     expect(await getMember()).toMatchObject({ tenantId: piloto, role: "owner", userId: "u-piloto" });
     // Same cookie on another tenant's domain: no membership there.
     req.headers = new Headers({ host: "otra-agente.ec" });
     expect(await getMember()).toBeNull();
-    req.userId = null;
+    // The portal opens the account's own workspace.
     req.headers = new Headers({ host: "localhost:3200" });
+    expect(await getMember()).toMatchObject({ tenantId: piloto, tenantSlug: "piloto" });
+    req.userId = null;
     expect(await getMember()).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { sha256 } from "@/lib/crypto";
 import { errorInfo, log } from "@/lib/logger";
-import { getCurrentTenant } from "@/server/tenant";
+import { getHostTenant } from "@/server/tenant";
 import { defaultAssistantDeps, webChatTurn } from "@/modules/assistant/service";
 
 export const maxDuration = 60;
@@ -28,7 +28,9 @@ export async function POST(req: Request) {
   const parsed = bodySchema.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return Response.json({ status: "invalid", error: parsed.error.issues[0]?.message ?? "Mensaje no válido" }, { status: 400 });
   try {
-    const tenant = await getCurrentTenant();
+    // The assistant answers for one agent; the portal has none.
+    const tenant = await getHostTenant();
+    if (!tenant) return Response.json({ status: "unavailable" }, { status: 404 });
     const result = await webChatTurn({ tenantId: tenant.id, token: parsed.data.token, message: parsed.data.message, ipHash: sha256(clientIp(req)) }, deps);
     if (result.status === "rate_limited") {
       return Response.json({ status: "rate_limited", error: "Estás enviando muchos mensajes. Espera un momento e inténtalo de nuevo." }, { status: 429 });

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 import { InquiryForm } from "@/components/public/InquiryForm";
@@ -20,17 +19,19 @@ import { Price } from "@/components/ui/Price";
 import { Reveal } from "@/components/ui/Reveal";
 import { CONSENT_TEXT } from "@/modules/crm/service";
 import { OPERATION_LABEL, TYPE_LABEL } from "@/modules/properties/domain";
+import { citySlug } from "@/modules/properties/landing";
 import { getPublicProperty, listRelated, type PublicListing } from "@/modules/properties/service";
+import { Breadcrumbs, landingCrumbs } from "../../_catalog/CatalogView";
 import { submitInquiry } from "../../../_lib/actions";
 import { HONEYPOT_FIELD, issueFormToken } from "../../../_lib/guard";
-import { absoluteImage, getSite, siteOrigin } from "../../../_lib/site";
+import { absoluteImage, getScope, getSite, isPortal, siteOrigin } from "../../../_lib/site";
+import { AgentAvatar } from "../../_portal/AgentCard";
+import { getListingAgent } from "@/modules/agents/portal";
+import Link from "next/link";
 
 const container = "mx-auto w-full max-w-7xl px-5 sm:px-8 lg:px-12";
 
-const lookup = cache(async (slug: string) => {
-  const site = await getSite();
-  return getPublicProperty(site.tenantId, slug);
-});
+const lookup = cache(async (slug: string) => getPublicProperty(await getScope(), slug));
 
 function summary(l: PublicListing): string {
   const kind = [l.propertyType ? TYPE_LABEL[l.propertyType] : "Propiedad", l.operation ? `en ${OPERATION_LABEL[l.operation].toLowerCase()}` : null]
@@ -118,34 +119,32 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
   if (result.kind === "gone") redirect(`/propiedades/${encodeURIComponent(slug)}/no-disponible`);
 
   const l = result.listing;
-  const [site, origin] = await Promise.all([getSite(), siteOrigin()]);
-  const related = (await listRelated(site.tenantId, l, 3)).map(toCardProperty);
+  const [scope, portal, origin] = await Promise.all([getScope(), isPortal(), siteOrigin()]);
+  const related = (await listRelated(scope, l, 3)).map(toCardProperty);
+  // On the portal the listing's own agent answers; on an agent's site, the site's agent and funnel.
+  const agent = portal ? await getListingAgent(l.tenantId, l.agentId) : null;
+  const site = portal ? null : await getSite();
+  const whatsapp = portal ? agent?.whatsapp : site?.agent?.whatsapp;
+  const booking = site ? { href: site.bookingHref, label: "Agenda una visita" } : { href: "#consulta", label: "Contactar al agente" };
   const card = toCardProperty(l);
   const status = card.status;
   const closed = status !== "available";
   const url = `${origin}/propiedades/${l.slug}`;
   const where = formatLocation(l);
 
-  const bookingLabel = "Agenda una visita";
+  // The trail leads back to the searches this listing belongs to ("Casas en venta" › "Quito").
+  const crumbs =
+    l.operation && l.propertyType
+      ? landingCrumbs({ operation: l.operation, type: l.propertyType, city: l.city ? citySlug(l.city) : undefined }, l.city ?? undefined)
+      : [{ label: "Propiedades", href: "/propiedades" }];
+
 
   return (
     <>
       <JsonLd data={listingJsonLd(l, url, origin)} />
       <article className="pb-20 lg:pb-28">
         <div className={`${container} pt-4 lg:pt-8`}>
-          <nav aria-label="Ruta de navegación" className="text-sm text-ink-muted">
-            <ol className="flex flex-wrap items-center gap-x-2">
-              <li>
-                <Link href="/propiedades" className="inline-flex min-h-11 items-center text-link underline-offset-4 hover:underline">
-                  Propiedades
-                </Link>
-              </li>
-              <li aria-hidden="true">›</li>
-              <li aria-current="page" className="line-clamp-1">
-                {l.title}
-              </li>
-            </ol>
-          </nav>
+          <Breadcrumbs crumbs={crumbs} origin={origin} current={l.title} />
 
           <header className="mt-2 mb-8 flex flex-col gap-3 lg:mb-10">
             <p className="text-eyebrow text-clay">
@@ -180,19 +179,42 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
                   </Button>
                 </div>
               ) : (
-                <Button href={site.bookingHref} size="lg" className="mt-2 w-full">
-                  {bookingLabel}
+                <Button href={booking.href} size="lg" className="mt-2 w-full">
+                  {booking.label}
                 </Button>
               )}
               <WhatsAppButton
-                phone={site.agent?.whatsapp}
+                phone={whatsapp}
                 size="lg"
                 className="w-full"
                 message={`Hola, me interesa ${l.title} (${url})`}
               />
-              <MoreLink href="#consulta" className="self-center">
-                Hacer una consulta por escrito
-              </MoreLink>
+              {agent ? (
+                agent.phone ? (
+                <a
+                  href={`tel:${agent.phone.replace(/[^\d+]/g, "")}`}
+                  className="inline-flex min-h-11 items-center justify-center text-[1.0625rem] text-link underline-offset-4 hover:underline"
+                >
+                  Llamar al {agent.phone}
+                </a>
+                ) : null
+              ) : (
+                <MoreLink href="#consulta" className="self-center">
+                  Hacer una consulta por escrito
+                </MoreLink>
+              )}
+              {agent ? (
+                <div className="flex items-center gap-4 border-t border-line pt-5">
+                  <AgentAvatar agent={agent} size={56} className="size-14" />
+                  <div className="min-w-0">
+                    <p className="text-sm text-ink-muted">Publicado por</p>
+                    <p className="truncate text-[1.0625rem] font-semibold text-ink">{agent.displayName}</p>
+                    <Link href={`/agentes/${agent.tenantSlug}`} className="inline-flex min-h-11 items-center text-[0.9375rem] text-link underline-offset-4 hover:underline">
+                      Ver sus propiedades
+                    </Link>
+                  </div>
+                </div>
+              ) : null}
             </div>
           </aside>
 
@@ -232,7 +254,9 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
               <h2 id="consulta-title" className="font-display text-display-md text-ink">
                 Pregunta por esta propiedad
               </h2>
-              <p className="mt-2 mb-8 max-w-prose text-[1.0625rem] text-ink-muted">Te respondo por el medio que prefieras.</p>
+              <p className="mt-2 mb-8 max-w-prose text-[1.0625rem] text-ink-muted">
+                {agent ? `Tu mensaje le llega directo a ${agent.displayName}, que te responde por el medio que prefieras.` : "Te respondo por el medio que prefieras."}
+              </p>
               <div className="max-w-xl">
                 <InquiryForm
                   action={submitInquiry}
@@ -262,8 +286,8 @@ export default async function PropertyPage({ params }: PageProps<"/propiedades/[
               Ver similares
             </Button>
           ) : (
-            <Button href={site.bookingHref} className="shrink-0">
-              {bookingLabel}
+            <Button href={booking.href} className="shrink-0">
+              {booking.label}
             </Button>
           )}
         </div>

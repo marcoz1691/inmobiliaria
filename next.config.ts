@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const securityHeaders = [
+  // Test environment: keep every response (pages, images, files) out of search engines.
+  ...(process.env.APP_ENV === "staging" ? [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] : []),
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   { key: "X-Frame-Options", value: "DENY" },
@@ -31,6 +33,8 @@ const nextConfig: NextConfig = {
   // Tenant is resolved per request from the Host header, so pages render dynamically and
   // published changes are visible immediately. See docs/adr/0001-arquitectura.md.
   poweredByHeader: false,
+  // Dev only: the portal is also opened at 127.0.0.1 (e2e) and agents' sites at <slug>.localhost.
+  allowedDevOrigins: ["127.0.0.1", "*.localhost"],
   serverExternalPackages: ["@electric-sql/pglite", "sharp"],
   turbopack: {
     rules: {

@@ -11,6 +11,22 @@ const schema = z.object({
   APP_URL: z.url().default("http://localhost:3000"),
   /** Tenant served when the Host header does not match any tenant domain (single-tenant deploys, localhost). */
   DEFAULT_TENANT_SLUG: z.string().min(1).default("piloto"),
+  /**
+   * "portal": hosts that are not an agent's domain serve the public portal (every agent's
+   * listings). "single": they serve DEFAULT_TENANT_SLUG's site, as a one-agent deploy.
+   */
+  SITE_MODE: z.enum(["portal", "single"]).default("portal"),
+  /** "staging": public test environment. Shows a banner on every page and keeps search engines out. */
+  APP_ENV: z.enum(["production", "staging"]).default("production"),
+  /** Portal brand shown in its header, titles and share cards. */
+  PORTAL_NAME: z.string().trim().min(1).default("NestAndes"),
+  /** WhatsApp of the portal's sales team; agents use it to activate a paid plan until online payment exists. */
+  BILLING_WHATSAPP: optional,
+  /**
+   * Every agent gets a site at <tenant-slug>.<TENANT_BASE_DOMAIN> (e.g. "maria.miportal.ec").
+   * Defaults to "localhost" outside production, so piloto.localhost:3000 shows the pilot's site.
+   */
+  TENANT_BASE_DOMAIN: optional,
 
   /** Postgres (Supabase pooler). When absent, an embedded PGlite database is used (dev/test only). */
   DATABASE_URL: optional,
@@ -30,6 +46,8 @@ const schema = z.object({
 
   ANTHROPIC_API_KEY: optional,
   CLAUDE_MODEL: z.string().default("claude-sonnet-5-5"),
+  /** Model that reads property PDFs in the panel importer (~US$0.10 per 5-page sheet on Opus 5.5). */
+  CLAUDE_IMPORT_MODEL: z.string().default("claude-opus-5-5"),
 
   RESEND_API_KEY: optional,
   EMAIL_FROM: optional,

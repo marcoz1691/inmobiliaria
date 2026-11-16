@@ -64,7 +64,7 @@ export function PropertyActions({ id, title, status, slug }: Props) {
 
   return (
     <div className="flex flex-wrap items-start gap-2">
-      <Link href={`/panel/propiedades/${id}`} className={cn(pillClass, "bg-navy/10 font-semibold text-navy hover:bg-navy/15")}>
+      <Link href={`/panel/propiedades/${id}`} className={cn(pillClass, "bg-navy/10 font-semibold text-navy-hover hover:bg-navy/15")}>
         <Icon name="pencil" className="size-4" strokeWidth={2} />
         Editar<span className="sr-only"> {name}</span>
       </Link>

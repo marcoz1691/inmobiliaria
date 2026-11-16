@@ -7,6 +7,13 @@ import { getDb } from "./db/client";
 import { appSecret } from "./secrets";
 import { account, session, user, verification } from "./db/schema";
 
+function sameOrigin(request: Request): string | null {
+  const host = request.headers.get("host");
+  if (!host || !/^[a-z0-9.-]+(:\d+)?$/i.test(host)) return null;
+  const local = /^(localhost|127\.0\.0\.1|[a-z0-9-]+\.localhost)(:\d+)?$/i.test(host);
+  return `${local && env.NODE_ENV !== "production" ? "http" : "https"}://${host.toLowerCase()}`;
+}
+
 async function build() {
   const db = await getDb();
   return betterAuth({
@@ -16,9 +23,16 @@ async function build() {
     database: drizzleAdapter(db, { provider: "pg", schema: { user, session, account, verification } }),
     emailAndPassword: {
       enabled: true,
-      // Accounts are provisioned by an owner (scripts/seed.ts or the team screen), never self-service.
+      // Agents sign up through /panel/registro (src/modules/agents/registration.ts), which also
+      // creates their workspace; the generic Better Auth sign-up endpoint stays closed.
       disableSignUp: true,
       minPasswordLength: 10,
+    },
+    // The panel is served on the portal and on every agent's domain: a request is trusted when its
+    // Origin is the very host it was sent to (same-origin), never any other site.
+    trustedOrigins: (request?: Request) => {
+      const origin = request ? sameOrigin(request) : null;
+      return origin ? [origin] : [];
     },
     session: { expiresIn: 60 * 60 * 24 * 14, updateAge: 60 * 60 * 24 },
     rateLimit: {

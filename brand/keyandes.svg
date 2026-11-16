@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 96" role="img" aria-label="KeyAndes">
+  <title>KeyAndes</title>
+  <!-- Mark: a key whose bit is the Andes skyline. -->
+  <rect x="0" y="0" width="96" height="96" rx="24" fill="#0B3B5C"/>
+  <circle cx="34" cy="48" r="13" fill="none" stroke="#fff" stroke-width="6"/>
+  <path d="M47 48h31" stroke="#fff" stroke-width="6" stroke-linecap="round"/>
+  <path d="M56 48l5-8 5 8 5-11 7 11" fill="none" stroke="#4FD1C5" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>
+  <text x="120" y="66" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#0B3B5C">key<tspan fill="#0F9F94">andes</tspan></text>
+</svg>

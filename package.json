@@ -17,6 +17,7 @@
     "db:migrate": "tsx --conditions=react-server scripts/migrate.ts",
     "db:seed": "tsx --conditions=react-server scripts/seed.ts",
     "import:pdfs": "tsx --conditions=react-server scripts/import-pdfs.ts",
+    "plan:set": "tsx --conditions=react-server scripts/set-plan.ts",
     "check": "npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {

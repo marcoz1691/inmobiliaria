@@ -1,5 +1,6 @@
 "use client";
 import { useId, useState } from "react";
+import { CANTONS, findCanton, findProvince, PROVINCES } from "@/modules/geo/ecuador";
 import { OPERATIONS, OPERATION_LABEL, PROPERTY_TYPES, TYPE_LABEL } from "@/modules/properties/domain";
 import { Field, describedBy, inputClass, selectClass } from "../fields";
 import { cn } from "@/components/ui/cn";
@@ -41,6 +42,9 @@ export function BasicsFields(props: StepFieldsProps) {
   const city = fp("city");
   const sector = fp("sector");
   const province = fp("province");
+  const currentProvince = findProvince(form.province);
+  const currentCanton = findCanton(form.city, form.province);
+  const cityOptions = currentProvince ? CANTONS.filter((c) => c.province.slug === currentProvince.slug) : CANTONS;
   return (
     <div className={cn(card, "grid gap-5 p-4 sm:grid-cols-2 sm:p-6")}>
       <Field {...title.field} label="Título" className="sm:col-span-2">
@@ -62,7 +66,7 @@ export function BasicsFields(props: StepFieldsProps) {
           {OPERATIONS.map((o) => (
             <label
               key={o}
-              className={cn("flex min-h-11 cursor-pointer items-center justify-center rounded-[0.6875rem] px-3 text-base font-medium text-ink-muted hover:text-ink has-checked:bg-white has-checked:text-ink has-checked:shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-navy", tap)}
+              className={cn("flex min-h-11 cursor-pointer items-center justify-center rounded-[0.6875rem] px-3 text-base font-medium text-ink/75 hover:text-ink has-checked:bg-white has-checked:text-ink has-checked:shadow-[0_1px_3px_rgba(0,0,0,0.12),0_0_0_0.5px_rgba(0,0,0,0.04)] has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-navy", tap)}
             >
               <input type="radio" name="operation" value={o} checked={form.operation === o} onChange={() => set("operation", o)} className="sr-only" />
               {OPERATION_LABEL[o]}
@@ -83,14 +87,49 @@ export function BasicsFields(props: StepFieldsProps) {
       <Field {...price.field} label={form.operation === "rent" ? "Precio mensual (US$)" : "Precio (US$)"}>
         <input {...price.control} className={inputClass} inputMode="decimal" autoComplete="off" value={form.price} onChange={(e) => set("price", e.target.value)} />
       </Field>
-      <Field {...city.field} label="Ciudad">
-        <input {...city.control} className={inputClass} value={form.city} autoComplete="address-level2" onChange={(e) => set("city", e.target.value)} />
+      <Field {...province.field} label="Provincia">
+        <select
+          {...province.control}
+          className={selectClass}
+          value={currentProvince?.name ?? form.province}
+          onChange={(e) => {
+            set("province", e.target.value);
+            // A city from another province no longer fits: ask for it again.
+            if (currentCanton && currentCanton.province.name !== e.target.value) set("city", "");
+          }}
+        >
+          <option value="">Elige la provincia</option>
+          {form.province && !currentProvince ? <option value={form.province}>{form.province} (como estaba escrito)</option> : null}
+          {PROVINCES.map((p) => (
+            <option key={p.slug} value={p.name}>
+              {p.name}
+            </option>
+          ))}
+        </select>
       </Field>
-      <Field {...sector.field} label="Sector o barrio" optional>
+      <Field {...city.field} label="Ciudad o cantón">
+        <select
+          {...city.control}
+          className={selectClass}
+          value={currentCanton?.slug ?? form.city}
+          onChange={(e) => {
+            // Options carry the canton slug ("bolivar-carchi"); the listing stores its name and province.
+            const picked = cityOptions.find((c) => c.slug === e.target.value);
+            set("city", picked?.name ?? e.target.value);
+            if (picked && picked.province.slug !== currentProvince?.slug) set("province", picked.province.name);
+          }}
+        >
+          <option value="">Elige la ciudad</option>
+          {form.city && !currentCanton ? <option value={form.city}>{form.city} (como estaba escrito)</option> : null}
+          {cityOptions.map((c) => (
+            <option key={c.slug} value={c.slug}>
+              {currentProvince ? c.label : `${c.label} · ${c.province.name}`}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field {...sector.field} label="Sector o barrio" optional className="sm:col-span-2">
         <input {...sector.control} className={inputClass} value={form.sector} onChange={(e) => set("sector", e.target.value)} />
-      </Field>
-      <Field {...province.field} label="Provincia" optional>
-        <input {...province.control} className={inputClass} value={form.province} autoComplete="address-level1" onChange={(e) => set("province", e.target.value)} />
       </Field>
     </div>
   );
@@ -198,7 +237,7 @@ function PrivacyChoice({ value, onChange }: { value: FormState["locationPrivacy"
                 {p.help}
               </span>
             </span>
-            <Icon name="check" strokeWidth={2.6} className={cn("mt-0.5 size-5 shrink-0 text-navy opacity-0 scale-50 transition-[opacity,scale] duration-300 peer-checked:scale-100 peer-checked:opacity-100", ease)} />
+            <Icon name="check" strokeWidth={2.6} className={cn("mt-0.5 size-5 shrink-0 text-navy-hover opacity-0 scale-50 transition-[opacity,scale] duration-300 peer-checked:scale-100 peer-checked:opacity-100", ease)} />
           </label>
         ))}
       </div>
@@ -263,7 +302,7 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
                   aria-label={`Agregar ${s}`}
                   className={cn("inline-flex min-h-11 items-center gap-1 rounded-full bg-ink/[0.06] pr-4 pl-3 text-[0.9375rem] text-ink hover:bg-ink/[0.1]", tap, press)}
                 >
-                  <Icon name="plus" className="size-4 text-navy" strokeWidth={2.2} /> {s}
+                  <Icon name="plus" className="size-4 text-navy-hover" strokeWidth={2.2} /> {s}
                 </button>
               </li>
             ))}
@@ -296,7 +335,7 @@ function ChipsEditor({ legend, help, values, suggestions, max, maxLength, verify
             add(draft);
             setDraft("");
           }}
-          className={cn("min-h-11 shrink-0 rounded-full bg-navy/10 px-4 text-[0.9375rem] font-medium text-navy hover:bg-navy/15", tap, press)}
+          className={cn("min-h-11 shrink-0 rounded-full bg-navy/10 px-4 text-[0.9375rem] font-medium text-navy-hover hover:bg-navy/15", tap, press)}
         >
           Agregar
         </button>
@@ -355,7 +394,7 @@ function ListEditor({ legend, help, values, max, maxLength, verify, onChange }: 
             }
           }}
         />
-        <button type="button" onClick={add} className={cn("min-h-11 shrink-0 rounded-full bg-navy/10 px-4 text-[0.9375rem] font-medium text-navy hover:bg-navy/15", tap, press)}>
+        <button type="button" onClick={add} className={cn("min-h-11 shrink-0 rounded-full bg-navy/10 px-4 text-[0.9375rem] font-medium text-navy-hover hover:bg-navy/15", tap, press)}>
           Agregar
         </button>
       </div>

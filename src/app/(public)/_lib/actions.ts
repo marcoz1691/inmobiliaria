@@ -6,7 +6,8 @@ import { AppError } from "@/lib/errors";
 import { errorInfo, log } from "@/lib/logger";
 import { captureInquiry, inquirySchema } from "@/modules/crm/service";
 import { cancelBookingByToken } from "@/modules/funnels/service";
-import { getCurrentTenant } from "@/server/tenant";
+import { publicListingOwner } from "@/modules/properties/service";
+import { getHostTenant } from "@/server/tenant";
 import type { FormState } from "@/components/public/form-state";
 import { checkPublicForm, GUARD_MESSAGE, HONEYPOT_FIELD } from "./guard";
 
@@ -51,9 +52,17 @@ export async function submitInquiry(_prev: FormState, fd: FormData): Promise<For
     };
   }
   try {
-    const tenant = await getCurrentTenant();
-    await captureInquiry(tenant.id, parsed.data, { source: parsed.data.propertyId ? "property_form" : "contact_form" });
-    return { status: "success", message: "¡Gracias! Recibí tu mensaje y te responderé lo antes posible." };
+    // On an agent's site the lead is theirs. On the portal it goes to whoever published the
+    // listing, looked up on the server: the client only names a public listing, never a tenant.
+    const host = await getHostTenant();
+    const owner = host ? null : parsed.data.propertyId ? await publicListingOwner(parsed.data.propertyId) : null;
+    const tenantId = host?.id ?? owner?.tenantId;
+    if (!tenantId) return { status: "error", message: "Esta propiedad ya no está disponible.", values };
+    await captureInquiry(tenantId, parsed.data, { source: parsed.data.propertyId ? (host ? "property_form" : "portal_form") : "contact_form" });
+    return {
+      status: "success",
+      message: host ? "¡Gracias! Recibí tu mensaje y te responderé lo antes posible." : "¡Gracias! El agente recibió tu mensaje y te responderá pronto.",
+    };
   } catch (err) {
     if (err instanceof AppError) return { status: "error", message: err.message, values };
     log.error("inquiry failed", errorInfo(err));
@@ -66,7 +75,8 @@ export async function cancelBooking(_prev: FormState, fd: FormData): Promise<For
   const token = str(fd, "token");
   if (!token || token.length > 200) return { status: "error", message: "El enlace no es válido." };
   try {
-    const tenant = await getCurrentTenant();
+    const tenant = await getHostTenant();
+    if (!tenant) return { status: "error", message: "Esta cita ya no está activa." };
     await cancelBookingByToken(tenant.id, token);
     revalidatePath(`/cita/${token}`);
     return { status: "success", message: "Tu cita fue cancelada." };

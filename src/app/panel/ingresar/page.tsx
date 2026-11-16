@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import Link from "next/link";
 import { getMember } from "@/server/session";
+import { getHostTenant } from "@/server/tenant";
 import { Icon } from "@/components/admin/ui/Icon";
 import { LoginForm } from "./LoginForm";
 
@@ -8,6 +10,7 @@ export const metadata: Metadata = { title: "Ingresar" };
 
 export default async function LoginPage() {
   if (await getMember()) redirect("/panel");
+  const portal = (await getHostTenant()) === null;
   return (
     <main id="contenido" className="flex w-full flex-1 flex-col items-center justify-center px-4 py-12 sm:py-20">
       <div className="w-full max-w-[25rem] transition-[opacity,translate] duration-700 ease-apple starting:translate-y-3 starting:opacity-0">
@@ -20,6 +23,14 @@ export default async function LoginPage() {
           <p className="mt-2 max-w-xs text-[0.9375rem] leading-relaxed text-ink-muted">Publica propiedades y atiende a tus prospectos desde cualquier dispositivo.</p>
         </div>
         <LoginForm />
+        {portal ? (
+          <p className="mt-6 text-center text-[0.9375rem] text-ink-muted">
+            ¿Eres agente y aún no tienes cuenta?{" "}
+            <Link href="/panel/registro" className="font-medium text-link underline-offset-4 hover:underline">
+              Regístrate
+            </Link>
+          </p>
+        ) : null}
       </div>
     </main>
   );

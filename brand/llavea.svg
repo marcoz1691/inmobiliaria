@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 96" role="img" aria-label="Llavea">
+  <title>Llavea</title>
+  <!-- Mark: a house whose door is a keyhole. -->
+  <rect x="0" y="0" width="96" height="96" rx="24" fill="#0B5FFF"/>
+  <path d="M24 46 48 26l24 20v24a4 4 0 0 1-4 4H28a4 4 0 0 1-4-4Z" fill="none" stroke="#fff" stroke-width="6" stroke-linejoin="round"/>
+  <circle cx="48" cy="52" r="6" fill="#fff"/>
+  <path d="M45 56h6l2 12h-10Z" fill="#fff"/>
+  <text x="120" y="66" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#0F172A">llavea</text>
+</svg>

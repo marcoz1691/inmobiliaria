@@ -14,7 +14,7 @@ const MAX_BYTES = 20 * 1024 * 1024;
 type ImportResult =
   | { kind: "already_imported"; importId: string; fileName: string }
   | { kind: "needs_ocr"; importId: string; message: string }
-  | { kind: "parsed"; importId: string; created: number; skipped: number; warnings: string[] };
+  | { kind: "parsed"; importId: string; created: number; skipped: number; warnings: string[]; method: "parser" | "ai" };
 
 type Item = { key: string; name: string; progress: number; state: "waiting" | "uploading" | "processing" | "done" | "error"; result?: ImportResult; error?: string };
 
@@ -22,12 +22,13 @@ function summary(r: ImportResult): { text: string; tone: "ok" | "warn" } {
   if (r.kind === "already_imported") return { text: `Este PDF ya se importó antes («${r.fileName}»).`, tone: "warn" };
   if (r.kind === "needs_ocr") return { text: r.message, tone: "warn" };
   if (r.created === 0) return { text: r.skipped ? "No se creó ningún borrador: ya existen propiedades muy parecidas." : "No encontramos fichas con precio y dirección. Puedes crear la propiedad a mano y adjuntar fotos.", tone: "warn" };
-  const drafts = r.created === 1 ? "Se creó 1 borrador" : `Se crearon ${r.created} borradores`;
-  return { text: `${drafts} para revisar${r.skipped ? ` y se omitieron ${r.skipped} posibles duplicados` : ""}.`, tone: "ok" };
+  const who = r.method === "ai" ? "El agente de IA completó" : "Se completaron";
+  const drafts = r.created === 1 ? `${who} 1 borrador` : `${who} ${r.created} borradores`;
+  return { text: `${drafts} para que revises${r.skipped ? ` y omitió ${r.skipped} posibles duplicados` : ""}.`, tone: "ok" };
 }
 
 /** Uploads PDFs one by one (each can take a few seconds to parse) and reports what was created. */
-export function PdfImporter() {
+export function PdfImporter({ ai }: { ai: boolean }) {
   const id = useId();
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
@@ -61,12 +62,19 @@ export function PdfImporter() {
   return (
     <div>
       <div className={cn(card, "flex flex-col items-center px-5 py-7 text-center sm:py-9")}>
-        <span aria-hidden="true" className="grid size-14 place-items-center rounded-full bg-navy/10 text-navy">
+        <span aria-hidden="true" className="grid size-14 place-items-center rounded-full bg-navy/10 text-navy-hover">
           <Icon name="docImport" className="size-7" />
         </span>
-        <p className="mt-3 text-headline text-ink">Sube fichas o catálogos en PDF</p>
+        <p className="mt-3 text-headline text-ink">Sube el PDF de tu propiedad</p>
         <p id={`${id}-help`} className="mt-1 max-w-md text-[0.9375rem] text-ink-muted">
-          Hasta 20 MB por archivo. Leemos los datos y las fotos y creamos borradores para que los revises. Nada se publica solo.
+          {ai
+            ? "Un agente de IA lee el documento y llena la publicación por ti: título, descripción, precio, áreas, ubicación y fotos. Te la deja como borrador para que la revises; nada se publica sin tu aprobación."
+            : "Leemos fichas y catálogos de bancos y creamos borradores con sus datos y fotos para que los revises. Nada se publica sin tu aprobación."}{" "}
+          Hasta 20 MB por archivo.
+        </p>
+        <p className={cn("mt-3 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-sm font-medium", ai ? "bg-navy/10 text-navy-hover" : "bg-ink/[0.06] text-ink/75")}>
+          <Icon name={ai ? "check" : "alert"} className="size-4" strokeWidth={2.2} />
+          {ai ? "Lectura con IA activa" : "Lectura con IA no conectada: solo formatos conocidos"}
         </p>
         <input
           ref={input}
@@ -101,7 +109,7 @@ export function PdfImporter() {
                   aria-hidden="true"
                   className={cn(
                     "mt-0.5 grid size-8 shrink-0 place-items-center rounded-full",
-                    busy ? "bg-navy/10 text-navy" : i.state === "error" ? "bg-sold-bg text-sold" : s?.tone === "ok" ? "bg-available-bg text-available" : "bg-reserved-bg text-reserved",
+                    busy ? "bg-navy/10 text-navy-hover" : i.state === "error" ? "bg-sold-bg text-sold" : s?.tone === "ok" ? "bg-available-bg text-available" : "bg-reserved-bg text-reserved",
                   )}
                 >
                   {busy ? <Spinner /> : <Icon name={i.state === "error" ? "x" : s?.tone === "ok" ? "check" : "alert"} className="size-4" strokeWidth={2.4} />}
@@ -120,14 +128,16 @@ export function PdfImporter() {
                       <p className="mt-0.5 text-sm text-ink-muted tabular-nums">Subiendo {Math.round(i.progress * 100)} %</p>
                     </>
                   ) : null}
-                  {i.state === "processing" ? <p className="text-sm text-ink-muted">Leyendo el PDF y extrayendo fotos…</p> : null}
+                  {i.state === "processing" ? (
+                    <p className="text-sm text-ink-muted">{ai ? "El agente de IA está leyendo el PDF y armando la publicación… puede tardar hasta un par de minutos." : "Leyendo el PDF y extrayendo fotos…"}</p>
+                  ) : null}
                   {i.state === "error" ? <p className="text-sm font-medium text-sold">{i.error}</p> : null}
                   {s && i.result ? (
                     <>
                       <p className={cn("text-sm", s.tone === "ok" ? "text-available" : "text-reserved")}>{s.text}</p>
                       <Link
                         href={`/panel/importar/${i.result.importId}`}
-                        className={cn("-ml-3 inline-flex min-h-11 items-center gap-0.5 rounded-full px-3 text-[0.9375rem] font-medium text-navy hover:bg-navy/[0.07]", tap)}
+                        className={cn("-ml-3 inline-flex min-h-11 items-center gap-0.5 rounded-full px-3 text-[0.9375rem] font-medium text-navy-hover hover:bg-navy/[0.07]", tap)}
                       >
                         Ver revisión
                         <Icon name="chevronRight" className="size-4" strokeWidth={2.2} />

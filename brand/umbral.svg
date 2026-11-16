@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 380 96" role="img" aria-label="Umbral">
+  <title>Umbral</title>
+  <!-- Mark: an open doorway with its threshold. -->
+  <rect x="0" y="0" width="96" height="96" rx="24" fill="#111827"/>
+  <path d="M32 72V38a16 16 0 0 1 32 0v34" fill="none" stroke="#F5B942" stroke-width="7" stroke-linecap="round"/>
+  <path d="M22 74h52" stroke="#fff" stroke-width="7" stroke-linecap="round"/>
+  <text x="120" y="66" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#111827">umbral</text>
+</svg>

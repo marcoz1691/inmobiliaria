@@ -18,7 +18,7 @@ test("visitor filters the catalog, opens a listing and sends an inquiry", async 
   // Mobile filters live in a disclosure; desktop shows the sidebar.
   const scope = isMobile ? page.locator("details") : page.locator("aside");
   if (isMobile) await page.getByText("Filtros", { exact: true }).click();
-  await scope.getByLabel("Sector o ciudad").fill("Cumbayá");
+  await scope.getByLabel("Sector o palabra clave").fill("Cumbayá");
   await scope.getByLabel("Operación").selectOption("sale");
   await scope.getByLabel("Dormitorios").selectOption("2");
   await scope.getByRole("button", { name: "Ver resultados" }).click();
@@ -40,6 +40,32 @@ test("visitor filters the catalog, opens a listing and sends an inquiry", async 
   await waitForFormMinAge(form);
   await form.getByRole("button", { name: "Enviar consulta" }).click();
   await expect(form.getByText("Mensaje enviado")).toBeVisible();
+});
+
+test("visitor searches from the home page and lands on an indexable search page", async ({ page }) => {
+  await page.goto("/");
+  const search = page.getByRole("form", { name: "Buscar propiedades" });
+  await search.getByLabel("Quiero").selectOption("sale");
+  await search.getByLabel("Tipo de propiedad").selectOption("house");
+  await search.getByRole("button", { name: "Buscar" }).click();
+
+  await expect(page).toHaveURL(/\/venta\/casas$/);
+  await expect(page.getByRole("heading", { level: 1, name: /Casas en venta/ })).toBeVisible();
+  await expect(page).toHaveTitle(/Casas en venta/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/venta\/casas$/);
+  await expect(page.locator('meta[name="robots"][content*="noindex"]')).toHaveCount(0);
+  await expect(page.getByRole("link", { name: PUBLISHED })).toBeVisible();
+  await expect(page.getByRole("link", { name: /Departamento de prueba/ })).toHaveCount(0);
+});
+
+test("search pages exist only for real inventory", async ({ page }) => {
+  expect((await page.goto("/venta/casas/quito"))?.status()).toBe(200);
+  await expect(page.getByRole("heading", { level: 1, name: "Casas en venta en Quito." })).toBeVisible();
+  expect((await page.goto("/venta/casas/ciudad-inexistente"))?.status()).toBe(404);
+  expect((await page.goto("/venta/mansiones"))?.status()).toBe(404);
+  // A valid type without stock renders, but stays out of the index.
+  await page.goto("/venta/bodegas");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/);
 });
 
 test("inquiry shows field errors without consent", async ({ page }) => {
@@ -69,5 +95,7 @@ test("robots and sitemap", async ({ request }) => {
   const sitemap = await (await request.get("/sitemap.xml")).text();
   expect(sitemap).toContain("/propiedades/casa-de-prueba-e2e-en-cumbaya");
   expect(sitemap).toContain("/agenda/comprador");
+  expect(sitemap).toContain("/venta/casas/quito");
+  expect(sitemap).not.toContain("/venta/bodegas");
   expect(sitemap).not.toContain(ARCHIVED_SLUG);
 });

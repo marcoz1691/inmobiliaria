@@ -132,7 +132,7 @@ export function PhotoManager({ propertyId, initial, onChange }: { propertyId: st
   return (
     <div>
       <div className={cn(card, "flex flex-col items-center px-5 py-7 text-center sm:py-9")}>
-        <span aria-hidden="true" className="grid size-14 place-items-center rounded-full bg-navy/10 text-navy">
+        <span aria-hidden="true" className="grid size-14 place-items-center rounded-full bg-navy/10 text-navy-hover">
           <Icon name="camera" className="size-7" />
         </span>
         <p className="mt-3 text-headline text-ink">Agrega fotos desde tu cámara o galería</p>
@@ -348,7 +348,7 @@ function SortablePhoto({
             <Icon name="chevronRight" className="size-5" strokeWidth={2} />
           </button>
           {!photo.isCover ? (
-            <button type="button" className={cn("min-h-11 rounded-full px-3 text-sm font-medium text-navy hover:bg-navy/[0.07]", tap)} onClick={() => onMove(index, 0)}>
+            <button type="button" className={cn("min-h-11 rounded-full px-3 text-sm font-medium text-navy-hover hover:bg-navy/[0.07]", tap)} onClick={() => onMove(index, 0)}>
               Usar como portada<span className="sr-only"> (foto {n})</span>
             </button>
           ) : null}

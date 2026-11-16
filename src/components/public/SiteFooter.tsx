@@ -7,6 +7,8 @@ type SiteFooterProps = {
   name: string;
   tagline?: string;
   nav: NavItem[];
+  /** Search pages with live listings ("Casas en venta"); the column is omitted when empty. */
+  categories?: NavItem[];
   email?: string | null;
   whatsapp?: string | null;
   phone?: string | null;
@@ -26,6 +28,7 @@ export function SiteFooter({
   name,
   tagline,
   nav,
+  categories = [],
   email,
   whatsapp,
   phone,
@@ -41,12 +44,27 @@ export function SiteFooter({
     <footer className="mt-auto bg-sand text-sm">
       <div className="mx-auto max-w-7xl px-5 pt-12 pb-8 sm:px-8 lg:px-12 lg:pt-16">
         <div className="grid grid-cols-2 gap-x-6 gap-y-10 border-b border-line pb-10 lg:grid-cols-12">
-          <div className="col-span-2 lg:col-span-6">
+          <div className={categories.length ? "col-span-2 lg:col-span-4" : "col-span-2 lg:col-span-6"}>
             <p className="text-headline text-ink">{name}</p>
             {tagline ? <p className="mt-1 text-ink-muted">{tagline}</p> : null}
           </div>
 
-          <nav aria-label="Pie de página" className="lg:col-span-3">
+          {categories.length ? (
+            <nav aria-label="Búsquedas frecuentes" className="lg:col-span-3">
+              <h2 className={headingClass}>Propiedades</h2>
+              <ul className="mt-2">
+                {categories.map((item) => (
+                  <li key={item.href}>
+                    <Link href={item.href} className={linkClass}>
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
+          ) : null}
+
+          <nav aria-label="Pie de página" className={categories.length ? "lg:col-span-2" : "lg:col-span-3"}>
             <h2 className={headingClass}>Explora</h2>
             <ul className="mt-2">
               {nav.map((item) => (

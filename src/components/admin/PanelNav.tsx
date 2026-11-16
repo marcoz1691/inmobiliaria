@@ -73,7 +73,7 @@ export function PanelNav({ items, userName, badges = {} }: { items: PanelNavItem
                             on ? "bg-navy text-white" : "text-ink hover:bg-ink/[0.05] active:bg-ink/[0.08]",
                           )}
                         >
-                          <Icon name={i.icon} className={cn("size-5 shrink-0", on ? "text-white" : "text-navy")} strokeWidth={on ? 2 : 1.7} />
+                          <Icon name={i.icon} className={cn("size-5 shrink-0", on ? "text-white" : "text-navy-hover")} strokeWidth={on ? 2 : 1.7} />
                           <span className="flex-1 truncate">{i.label}</span>
                           {badge && badge.n > 0 ? (
                             <span className={cn("text-[0.8125rem] font-semibold tabular-nums", on ? "text-white/85" : "text-ink-muted")}>
@@ -115,7 +115,7 @@ export function PanelNav({ items, userName, badges = {} }: { items: PanelNavItem
                   aria-current={on ? "page" : undefined}
                   className={cn(
                     "group flex min-h-[3.25rem] flex-col items-center justify-center gap-[3px] pt-1.5 pb-1 text-[0.6875rem] font-medium tracking-[0.005em] focus-visible:-outline-offset-4",
-                    on ? "text-navy" : "text-ink-muted",
+                    on ? "text-navy-hover" : "text-ink-muted",
                   )}
                 >
                   <span className={cn("relative transition-[scale] duration-200 group-active:scale-90", ease)}>

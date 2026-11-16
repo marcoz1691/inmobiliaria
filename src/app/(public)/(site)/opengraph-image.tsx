@@ -1,5 +1,6 @@
 import { ImageResponse } from "next/og";
-import { agentTagline, getSite } from "../_lib/site";
+import { env } from "@/env";
+import { agentTagline, getSite, isPortal } from "../_lib/site";
 
 export const alt = "Asesoría inmobiliaria";
 export const size = { width: 1200, height: 630 };
@@ -7,8 +8,10 @@ export const contentType = "image/png";
 
 /** Default share card: the agent's name and descriptor on the site's paper/ink palette. */
 export default async function OpenGraphImage() {
-  const site = await getSite();
-  const tagline = agentTagline(site.agent);
+  const portal = await isPortal();
+  const site = portal ? null : await getSite();
+  const name = site?.name ?? env.PORTAL_NAME;
+  const tagline = site ? agentTagline(site.agent) : "Casas, departamentos y terrenos en todo Ecuador";
   return new ImageResponse(
     (
       <div
@@ -26,10 +29,10 @@ export default async function OpenGraphImage() {
       >
         <div style={{ display: "flex", width: 96, height: 4, background: "#9a4527" }} />
         <div style={{ display: "flex", flexDirection: "column" }}>
-          <div style={{ fontSize: 88, lineHeight: 1.05, letterSpacing: -2 }}>{site.name}</div>
+          <div style={{ fontSize: 88, lineHeight: 1.05, letterSpacing: -2 }}>{name}</div>
           {tagline ? <div style={{ marginTop: 24, fontSize: 36, color: "#585c63", fontFamily: "sans-serif" }}>{tagline}</div> : null}
         </div>
-        <div style={{ display: "flex", fontSize: 28, color: "#585c63", fontFamily: "sans-serif" }}>Propiedades · Agenda una cita</div>
+        <div style={{ display: "flex", fontSize: 28, color: "#585c63", fontFamily: "sans-serif" }}>{portal ? "Propiedades en venta y alquiler" : "Propiedades · Agenda una cita"}</div>
       </div>
     ),
     size,

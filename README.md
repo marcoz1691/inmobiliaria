@@ -1,5 +1,7 @@
 # Plataforma inmobiliaria multi-tenant
 
+Portal inmobiliario para Ecuador: las personas buscan casas, departamentos, terrenos y oficinas por provincia y ciudad, y cada agente tiene su cuenta (correo y contraseña) para publicar sus propiedades y recibir las consultas en su panel. Cada agente además puede tener su propio sitio en su dominio. Ver [`docs/adr/0002-portal.md`](docs/adr/0002-portal.md).
+
 Sitio público y panel de gestión para agentes inmobiliarios en Ecuador. Cada agente (tenant) tiene su dominio, su catálogo de propiedades y un embudo que califica al visitante y le deja agendar una cita. Incluye CRM de prospectos, recordatorios por email y WhatsApp, webhooks de Meta (WhatsApp, Messenger, Instagram y Lead Ads), Conversions API, Google Calendar y un asistente de IA en el chat.
 
 - Arquitectura y decisiones: [`docs/adr/0001-arquitectura.md`](docs/adr/0001-arquitectura.md).
@@ -20,7 +22,8 @@ npm install
 cp .env.example .env.local   # completa lo que tengas; lo vacío queda "no conectado"
 npm run db:migrate           # aplica drizzle/*.sql (en PGlite también se aplica al arrancar)
 npm run db:seed              # tenant DEFAULT_TENANT_SLUG, dominios localhost y cuenta del agente
-npm run dev                  # http://localhost:3000 (sitio) y /panel/ingresar (panel)
+npm run dev                  # http://localhost:3000 (portal), /panel/registro (alta de agentes), /panel/ingresar
+                             # sitio propio del agente piloto: http://piloto.localhost:3000
 ```
 
 - Si no defines `SEED_OWNER_PASSWORD`, el seed genera una contraseña temporal y la muestra una sola vez en la terminal.
@@ -56,7 +59,7 @@ Email (Resend), WhatsApp Cloud API, webhooks de Meta, Conversions API, Google Ca
 ## Estructura
 
 ```
-src/app/(public)     sitio público por tenant (catálogo, propiedad, contacto, agenda, privacidad)
+src/app/(public)     sitio público por tenant (inicio con buscador, catálogo, páginas de búsqueda /venta y /alquiler, propiedad, contacto, agenda, privacidad)
 src/app/panel        panel de gestión
 src/app/api          webhooks, cron de jobs, chat, opt-out, OAuth de Google
 src/modules/*        dominio y servicios (properties, crm, funnels, integrations, jobs, …)

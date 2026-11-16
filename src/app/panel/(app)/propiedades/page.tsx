@@ -91,7 +91,7 @@ export default async function PropertiesPage({ searchParams }: PageProps<"/panel
         {filtered ? (
           <>
             {" · "}
-            <Link href="/panel/propiedades" className="text-navy hover:underline hover:underline-offset-4">
+            <Link href="/panel/propiedades" className="text-navy-hover hover:underline hover:underline-offset-4">
               Quitar filtros
             </Link>
           </>
@@ -132,7 +132,7 @@ export default async function PropertiesPage({ searchParams }: PageProps<"/panel
                 </Link>
                 <div className="min-w-0">
                   <h2 className="truncate text-[1.0625rem] leading-snug font-semibold tracking-[-0.01em] text-ink">
-                    <Link href={`/panel/propiedades/${p.id}`} className="hover:text-navy">
+                    <Link href={`/panel/propiedades/${p.id}`} className="hover:text-navy-hover">
                       {p.title || "Propiedad sin título"}
                     </Link>
                   </h2>

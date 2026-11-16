@@ -7,7 +7,7 @@ import { tap } from "./ui/motion";
 /** iOS-style back link: accent chevron + the parent screen's name. */
 export function BackLink({ href, label }: { href: string; label: string }) {
   return (
-    <Link href={href} className={cn("-ml-2.5 inline-flex min-h-11 items-center gap-0.5 rounded-full pr-3 pl-1 text-[1.0625rem] text-navy hover:bg-navy/[0.07]", tap)}>
+    <Link href={href} className={cn("-ml-2.5 inline-flex min-h-11 items-center gap-0.5 rounded-full pr-3 pl-1 text-[1.0625rem] text-navy-hover hover:bg-navy/[0.07]", tap)}>
       <Icon name="chevronLeft" className="size-6" strokeWidth={2.2} />
       {label}
     </Link>

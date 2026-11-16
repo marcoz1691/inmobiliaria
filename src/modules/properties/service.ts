@@ -1,7 +1,7 @@
 import "server-only";
-import { and, asc, desc, eq, gte, ilike, inArray, lte, ne, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, gte, inArray, isNull, lte, ne, or, sql, type SQL, type SQLWrapper } from "drizzle-orm";
 import { getDb } from "@/server/db/client";
-import { withTenant, type Tx } from "@/server/db/tenant-tx";
+import { withPortal, withTenant, type Tx } from "@/server/db/tenant-tx";
 import { properties, propertyMedia } from "@/server/db/schema";
 import type { MemberContext } from "@/server/session";
 import { AppError, forbidden, notFound } from "@/lib/errors";
@@ -9,6 +9,7 @@ import { audit } from "@/modules/audit/audit";
 import { getStorage } from "@/modules/media/storage";
 import { processImage } from "@/modules/media/process";
 import { MEDIA_WIDTHS } from "@/lib/image-loader";
+import { assertCanFeature, assertCanGoLive } from "@/modules/billing/service";
 import {
   approximateLocation,
   canTransition,
@@ -22,6 +23,7 @@ import {
   type PropertyStatus,
   type PublishCheckInput,
 } from "./domain";
+import { matchesPlace, type Facet } from "./landing";
 
 export type PropertyRow = typeof properties.$inferSelect;
 export type MediaRow = typeof propertyMedia.$inferSelect;
@@ -35,13 +37,14 @@ export function mediaSrc(m: Pick<MediaRow, "storageKey">): string {
   return `media:${getStorage().url(m.storageKey)}`;
 }
 
-async function uniqueSlug(tx: Tx, tenantId: string, base: string, excludeId?: string): Promise<string> {
+/** Slug unique across all tenants (the portal serves every listing at /propiedades/<slug>). */
+async function uniqueSlug(tx: Tx, _tenantId: string, base: string, excludeId?: string): Promise<string> {
   const root = slugify(base);
-  const taken = await tx
-    .select({ slug: properties.slug })
-    .from(properties)
-    .where(and(eq(properties.tenantId, tenantId), ilike(properties.slug, `${root}%`), excludeId ? ne(properties.id, excludeId) : undefined));
-  const set = new Set(taken.map((t) => t.slug));
+  const taken = await tx.execute<{ slug: string }>(sql`select taken_property_slugs as slug from taken_property_slugs(${root})`);
+  const rows = Array.isArray(taken) ? taken : (taken as unknown as { rows: { slug: string }[] }).rows;
+  let own: string | undefined;
+  if (excludeId) [{ slug: own } = { slug: undefined }] = await tx.select({ slug: properties.slug }).from(properties).where(eq(properties.id, excludeId));
+  const set = new Set(rows.map((t) => t.slug).filter((sl) => sl !== own));
   if (!set.has(root)) return root;
   for (let i = 2; ; i++) if (!set.has(`${root}-${i}`)) return `${root}-${i}`;
 }
@@ -123,6 +126,7 @@ export async function updateDraft(m: MemberContext, id: string, input: unknown):
     if (patch.priceKind === "appraisal" && current.priceKind !== "appraisal") {
       throw new AppError("invalid", "El avalúo no se puede usar como precio. Ingresa el precio de venta o alquiler.");
     }
+    if (patch.featured === true && !current.featured) await assertCanFeature(tx, m.tenantId, id);
     const values: Partial<typeof properties.$inferInsert> = { ...patch };
     // Keep the URL stable once published; drafts follow the title.
     if (patch.title !== undefined && current.status === "draft" && patch.title.trim()) {
@@ -192,6 +196,8 @@ export async function changeStatus(m: MemberContext, id: string, to: PropertySta
       const problems = publishProblems({ ...current, photoCount });
       if (problems.length) throw new AppError("invalid", "Aún falta información para publicar", { problems });
     }
+    // Going live takes a slot of the plan (published and reserved listings count).
+    if ((to === "published" || to === "reserved") && !LIVE_STATUSES.has(current.status)) await assertCanGoLive(tx, m.tenantId, id);
     const [row] = await tx
       .update(properties)
       .set({ status: to, publishedAt: to === "published" && !current.publishedAt ? new Date() : current.publishedAt })
@@ -351,8 +357,19 @@ function toPublicImage(m: MediaRow, title: string, i: number): PublicImage {
 }
 
 /** Strips private fields and applies the location privacy setting. */
-export function toPublic(p: PropertyRow, media: MediaRow[]): PublicListing {
-  const { address, lat, lng, fieldConfidence: _f, reviewNotes: _r, createdBy: _c, sourceImportId: _s, needsReview: _n, ...rest } = p;
+export function toPublic(p: PublicRow | PropertyRow, media: MediaRow[]): PublicListing {
+  // Private fields are dropped explicitly too, so a full row passed in never leaks them.
+  const {
+    address,
+    lat,
+    lng,
+    fieldConfidence: _f,
+    reviewNotes: _r,
+    createdBy: _c,
+    sourceImportId: _s,
+    needsReview: _n,
+    ...rest
+  } = p as PropertyRow;
   let map: PublicListing["map"] = null;
   if (lat !== null && lng !== null && p.locationPrivacy !== "hidden") {
     map = p.locationPrivacy === "exact" ? { lat, lng, radiusMeters: null } : approximateLocation(lat, lng);
@@ -362,8 +379,59 @@ export function toPublic(p: PropertyRow, media: MediaRow[]): PublicListing {
   return { ...rest, price, address: p.locationPrivacy === "exact" ? address : null, map, cover: images[0] ?? null, images };
 }
 
-function catalogWhere(tenantId: string, f: CatalogFilters): SQL {
-  const where: (SQL | undefined)[] = [eq(properties.tenantId, tenantId), inArray(properties.status, [...CATALOG_STATUSES])];
+/**
+ * Who a public read is for: one tenant's site (its id) or the portal, which reads every tenant's
+ * public listings through the `portal_reader` role (see withPortal).
+ */
+export const PORTAL = { portal: true } as const;
+export type Scope = string | typeof PORTAL;
+
+const isPortal = (scope: Scope): scope is typeof PORTAL => typeof scope !== "string";
+
+async function runPublic<T>(scope: Scope, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  const db = await getDb();
+  return isPortal(scope) ? withPortal(db, fn) : withTenant(db, scope, fn);
+}
+
+/** Columns a public read may select (the portal role has no grant on the others). */
+const {
+  fieldConfidence: _fc,
+  needsReview: _nr,
+  reviewNotes: _rn,
+  sourceImportId: _si,
+  createdBy: _cb,
+  ...PUBLIC_COLUMNS
+} = getTableColumns(properties);
+type PublicRow = Omit<PropertyRow, "fieldConfidence" | "needsReview" | "reviewNotes" | "sourceImportId" | "createdBy">;
+
+const inScope = (scope: Scope, statuses: readonly PropertyStatus[]) =>
+  and(isPortal(scope) ? undefined : eq(properties.tenantId, scope), inArray(properties.status, [...statuses]))!;
+
+/**
+ * City/province filters match free text the way people type it ("Sangolquí" is the canton
+ * Rumiñahui, "quito " is Quito): resolved in code against the distinct places in stock, then
+ * applied as an exact (city, province) list. An empty list matches nothing.
+ */
+async function placeFilter(tx: Tx, scope: Scope, f: CatalogFilters): Promise<SQL | undefined> {
+  if (!f.city && !f.province) return undefined;
+  const places = await tx
+    .selectDistinct({ city: properties.city, province: properties.province })
+    .from(properties)
+    .where(inScope(scope, CATALOG_STATUSES));
+  const hits = places.filter((p) => matchesPlace(p, { city: f.city ? slugify(f.city) : undefined, province: f.province ? slugify(f.province) : undefined }));
+  if (!hits.length) return sql`false`;
+  return or(
+    ...hits.map((p) =>
+      and(
+        p.city === null ? isNull(properties.city) : eq(properties.city, p.city),
+        p.province === null ? isNull(properties.province) : eq(properties.province, p.province),
+      ),
+    ),
+  );
+}
+
+function catalogWhere(scope: Scope, f: CatalogFilters, place?: SQL): SQL {
+  const where: (SQL | undefined)[] = [inScope(scope, CATALOG_STATUSES), place];
   if (f.operation) where.push(eq(properties.operation, f.operation));
   if (f.type) where.push(eq(properties.propertyType, f.type));
   if (f.q) {
@@ -384,20 +452,20 @@ function catalogWhere(tenantId: string, f: CatalogFilters): SQL {
   return and(...where)!;
 }
 
-async function withMedia(tx: Tx, tenantId: string, rows: PropertyRow[]): Promise<PublicListing[]> {
+async function withMedia(tx: Tx, rows: PublicRow[]): Promise<PublicListing[]> {
   if (!rows.length) return [];
   const media = await tx
     .select()
     .from(propertyMedia)
-    .where(and(eq(propertyMedia.tenantId, tenantId), inArray(propertyMedia.propertyId, rows.map((r) => r.id))))
+    .where(inArray(propertyMedia.propertyId, rows.map((r) => r.id)))
     .orderBy(desc(propertyMedia.isCover), asc(propertyMedia.position));
   const byProperty = Map.groupBy(media, (mm) => mm.propertyId);
   return rows.map((r) => toPublic(r, byProperty.get(r.id) ?? []));
 }
 
-export async function listCatalog(tenantId: string, f: CatalogFilters) {
-  return run(tenantId, async (tx) => {
-    const where = catalogWhere(tenantId, f);
+export async function listCatalog(scope: Scope, f: CatalogFilters) {
+  return runPublic(scope, async (tx) => {
+    const where = catalogWhere(scope, f, await placeFilter(tx, scope, f));
     const page = f.page ?? 1;
     const order =
       f.sort === "price_asc"
@@ -406,64 +474,94 @@ export async function listCatalog(tenantId: string, f: CatalogFilters) {
           ? [sql`${properties.price} desc nulls last`]
           : [desc(properties.featured), desc(properties.publishedAt)];
     const [rows, [count]] = await Promise.all([
-      tx.select().from(properties).where(where).orderBy(...order).limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE),
+      tx.select(PUBLIC_COLUMNS).from(properties).where(where).orderBy(...order).limit(PAGE_SIZE).offset((page - 1) * PAGE_SIZE),
       tx.select({ n: sql<number>`count(*)::int` }).from(properties).where(where),
     ]);
-    return { items: await withMedia(tx, tenantId, rows), total: count?.n ?? 0, page, pageSize: PAGE_SIZE };
+    return { items: await withMedia(tx, rows), total: count?.n ?? 0, page, pageSize: PAGE_SIZE };
   });
 }
 
-export async function listFeatured(tenantId: string, limit = 6): Promise<PublicListing[]> {
-  return run(tenantId, async (tx) => {
+/** Live listings grouped by operation, type and city: drives search landing pages, quick filters and the sitemap. */
+export async function listCatalogFacets(scope: Scope): Promise<Facet[]> {
+  return runPublic(scope, async (tx) => {
     const rows = await tx
-      .select()
+      .select({
+        operation: properties.operation,
+        type: properties.propertyType,
+        city: properties.city,
+        province: properties.province,
+        count: sql<number>`count(*)::int`,
+      })
       .from(properties)
-      .where(and(eq(properties.tenantId, tenantId), inArray(properties.status, [...CATALOG_STATUSES])))
-      .orderBy(desc(properties.featured), desc(properties.publishedAt))
+      .where(inScope(scope, CATALOG_STATUSES))
+      .groupBy(properties.operation, properties.propertyType, properties.city, properties.province);
+    // Live listings always carry the three fields (publish rules); skip any legacy row that does not.
+    return rows.filter((r): r is Facet => r.operation !== null && r.type !== null && r.city !== null && r.city.trim() !== "");
+  });
+}
+
+/** Featured first on a tenant site; newest first on the portal (no agent can buy the top spot). */
+export async function listFeatured(scope: Scope, limit = 6): Promise<PublicListing[]> {
+  return runPublic(scope, async (tx) => {
+    const rows = await tx
+      .select(PUBLIC_COLUMNS)
+      .from(properties)
+      .where(inScope(scope, CATALOG_STATUSES))
+      .orderBy(...(isPortal(scope) ? [desc(properties.publishedAt)] : [desc(properties.featured), desc(properties.publishedAt)]))
       .limit(limit);
-    return withMedia(tx, tenantId, rows);
+    return withMedia(tx, rows);
   });
 }
 
 export type PublicLookup = { kind: "ok"; listing: PublicListing } | { kind: "gone" } | { kind: "missing" };
 
-export async function getPublicProperty(tenantId: string, slug: string): Promise<PublicLookup> {
-  return run(tenantId, async (tx) => {
+export async function getPublicProperty(scope: Scope, slug: string): Promise<PublicLookup> {
+  return runPublic(scope, async (tx) => {
     const [row] = await tx
-      .select()
+      .select(PUBLIC_COLUMNS)
       .from(properties)
-      .where(and(eq(properties.tenantId, tenantId), eq(properties.slug, slug)))
+      .where(and(isPortal(scope) ? undefined : eq(properties.tenantId, scope), eq(properties.slug, slug)))
       .limit(1);
     if (!row) return { kind: "missing" };
     if (row.status === "archived") return { kind: "gone" };
     if (!(PUBLIC_STATUSES as readonly string[]).includes(row.status)) return { kind: "missing" };
-    const [listing] = await withMedia(tx, tenantId, [row]);
+    const [listing] = await withMedia(tx, [row]);
     return { kind: "ok", listing: listing! };
   });
 }
 
-export async function listRelated(tenantId: string, p: PublicListing, limit = 3): Promise<PublicListing[]> {
-  return run(tenantId, async (tx) => {
+export async function listRelated(scope: Scope, p: PublicListing, limit = 3): Promise<PublicListing[]> {
+  return runPublic(scope, async (tx) => {
     const rows = await tx
-      .select()
+      .select(PUBLIC_COLUMNS)
       .from(properties)
-      .where(and(eq(properties.tenantId, tenantId), eq(properties.status, "published"), ne(properties.id, p.id)))
+      .where(and(inScope(scope, ["published"]), ne(properties.id, p.id)))
       .orderBy(
         sql`(case when ${properties.propertyType} = ${p.propertyType} then 2 else 0 end) + (case when ${properties.city} = ${p.city} then 1 else 0 end) desc`,
         desc(properties.publishedAt),
       )
       .limit(limit);
-    return withMedia(tx, tenantId, rows);
+    return withMedia(tx, rows);
   });
 }
 
-export async function listPublicSlugs(tenantId: string) {
-  return run(tenantId, (tx) =>
-    tx
-      .select({ slug: properties.slug, updatedAt: properties.updatedAt })
-      .from(properties)
-      .where(and(eq(properties.tenantId, tenantId), inArray(properties.status, [...PUBLIC_STATUSES]))),
+export async function listPublicSlugs(scope: Scope) {
+  return runPublic(scope, (tx) =>
+    tx.select({ slug: properties.slug, updatedAt: properties.updatedAt }).from(properties).where(inScope(scope, PUBLIC_STATUSES)),
   );
+}
+
+/** Tenant that owns a public listing; how a portal inquiry reaches the right agent's CRM. */
+export async function publicListingOwner(propertyId: string): Promise<{ tenantId: string; agentId: string | null } | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(propertyId)) return null;
+  return withPortal(await getDb(), async (tx) => {
+    const [row] = await tx
+      .select({ tenantId: properties.tenantId, agentId: properties.agentId })
+      .from(properties)
+      .where(eq(properties.id, propertyId))
+      .limit(1);
+    return row ?? null;
+  });
 }
 
 /* ───────────── panel: additions (round 2) ───────────── */

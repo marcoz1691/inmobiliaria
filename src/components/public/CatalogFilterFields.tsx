@@ -1,6 +1,7 @@
-import { OPERATION_LABEL, OPERATIONS, PROPERTY_TYPES, TYPE_LABEL, type CatalogFilters } from "@/modules/properties/domain";
+import { OPERATION_LABEL, OPERATIONS, PROPERTY_TYPES, slugify, TYPE_LABEL, type CatalogFilters } from "@/modules/properties/domain";
 import { Button } from "@/components/ui/Button";
 import { inputClass as field, selectClass as select } from "./fields";
+import { LocationSelects } from "./LocationSelects";
 
 type Props = { filters: CatalogFilters; idPrefix: string };
 
@@ -13,9 +14,21 @@ export function CatalogFilterFields({ filters: f, idPrefix }: Props) {
     <div className="@container flex flex-col gap-5">
       <div>
         <label htmlFor={id("q")} className={labelClass}>
-          Sector o ciudad
+          Sector o palabra clave
         </label>
         <input id={id("q")} name="q" type="search" defaultValue={f.q ?? ""} maxLength={80} placeholder="Ej.: Cumbayá" className={field} />
+      </div>
+
+      <div className="grid gap-3 @min-[19rem]:grid-cols-2">
+        <LocationSelects
+          idPrefix={idPrefix}
+          defaultProvince={f.province ? slugify(f.province) : ""}
+          defaultCity={f.city ? slugify(f.city) : ""}
+          selectClassName={select}
+          labelClassName={labelClass}
+          anyProvince="Todas"
+          anyCity="Todas"
+        />
       </div>
 
       <div className="grid gap-3 @min-[19rem]:grid-cols-2">

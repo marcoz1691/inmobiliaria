@@ -116,7 +116,7 @@ export function ReviewStep({ propertyId, form, photos, priceKind, problems, stat
             <ul className="mt-4 overflow-hidden rounded-sm bg-sand/70">
               {problems.map((p) => {
                 const step = stepForProblem(p);
-                const action = cn("inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-full px-3 text-[0.9375rem] font-medium text-navy hover:bg-navy/[0.07]", tap);
+                const action = cn("inline-flex min-h-11 shrink-0 items-center gap-0.5 rounded-full px-3 text-[0.9375rem] font-medium text-navy-hover hover:bg-navy/[0.07]", tap);
                 return (
                   <li
                     key={p}

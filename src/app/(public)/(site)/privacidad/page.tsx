@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { env, integrations } from "@/env";
 import { CONSENT_TEXT } from "@/modules/crm/service";
-import { getSite } from "../../_lib/site";
+import { getSite, isPortal } from "../../_lib/site";
 
 export const metadata: Metadata = {
   title: "Política de privacidad",
@@ -31,8 +31,9 @@ function Section({ id, title, children }: { id: string; title: string; children:
  * profile yet, so they render as "pendiente de completar" instead of being made up.
  */
 export default async function PrivacyPage() {
-  const site = await getSite();
-  const { agent } = site;
+  const portal = await isPortal();
+  const site = portal ? null : await getSite();
+  const agent = site?.agent ?? null;
   const pixel = Boolean(env.META_PIXEL_ID);
   const draft = env.NODE_ENV !== "production";
 
@@ -43,7 +44,7 @@ export default async function PrivacyPage() {
   ].filter((r): r is { label: string; value: string; href: string } => r !== null);
 
   const owner: { label: string; value: React.ReactNode }[] = [
-    { label: "Nombre comercial", value: site.name },
+    { label: "Nombre comercial", value: site?.name ?? env.PORTAL_NAME },
     { label: "Nombre o razón social", value: <Pending /> },
     { label: "RUC o cédula", value: <Pending /> },
     { label: "Domicilio", value: agent?.city ? <>{agent.city} · dirección <Pending /></> : <Pending /> },
@@ -92,6 +93,20 @@ export default async function PrivacyPage() {
             ))}
           </dl>
         </Section>
+
+        {portal ? (
+          <Section id="agentes" title="Agentes que publican en el portal">
+            <p>
+              Las propiedades las publican agentes inmobiliarios independientes. Cuando consultas por una propiedad, tu nombre, tus datos de contacto y tu
+              mensaje llegan al agente que la publicó, que los usa para responderte y es responsable de ese tratamiento. Para ejercer tus derechos sobre esa
+              consulta puedes escribirle directamente o escribirnos a nosotros.
+            </p>
+            <p>
+              Si eres agente y creas una cuenta, guardamos tu nombre, correo, contraseña (cifrada) y los datos de perfil que decidas publicar, para darte
+              acceso al panel y mostrar tus propiedades.
+            </p>
+          </Section>
+        ) : null}
 
         <Section id="datos" title="Qué datos recogemos y para qué">
           <ul>

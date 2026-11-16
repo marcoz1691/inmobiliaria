@@ -31,6 +31,7 @@ const PANEL_PAGES = [
   "/panel/agenda",
   "/panel/embudos",
   "/panel/importar",
+  "/panel/plan",
   "/panel/perfil",
   "/panel/integraciones",
 ];
@@ -42,11 +43,21 @@ const PANEL_PAGES = [
  */
 const KNOWN: { page: string; rule: string; target: string; reason: string }[] = [];
 
+// Reduced motion: `Reveal` hides nothing and fades are off, so contrast is measured on the settled page.
+test.use({ reducedMotion: "reduce" });
+
 const BLOCKING = new Set(["serious", "critical"]);
 
 type Finding = { page: string; rule: string; impact: string; help: string; targets: string[] };
 
 async function audit(page: Page, name: string, info: TestInfo): Promise<Finding[]> {
+  // Entry animations fade text in; measuring contrast mid-fade reports false failures. Jump every
+  // finite, time-based animation to its end state (scroll-driven and looping ones are left alone).
+  await page.evaluate(() => {
+    for (const a of document.getAnimations()) {
+      if (a.timeline instanceof DocumentTimeline && Number.isFinite(a.effect?.getComputedTiming().endTime)) a.finish();
+    }
+  });
   const results = await new AxeBuilder({ page }).withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"]).analyze();
   const findings: Finding[] = results.violations.map((v) => ({
     page: name,

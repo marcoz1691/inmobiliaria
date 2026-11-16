@@ -16,3 +16,15 @@ export async function withTenant<T>(db: Db, tenantId: string, fn: (tx: Tx) => Pr
     return fn(tx);
   });
 }
+
+/**
+ * Read-only transaction for the public portal: role `portal_reader`, whose RLS policies and
+ * column grants expose only public listings, their photos and agents' public profiles.
+ */
+export async function withPortal<T>(db: Db, fn: (tx: Tx) => Promise<T>): Promise<T> {
+  return db.transaction(async (tx) => {
+    await tx.execute(sql`set transaction read only`);
+    await tx.execute(sql`set local role portal_reader`);
+    return fn(tx);
+  });
+}

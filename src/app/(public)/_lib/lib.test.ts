@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { catalogQuery, hasActiveFilters, parseCatalogParams } from "./catalog-params";
+import { catalogQuery, catalogUrl, hasActiveFilters, isLandingShaped, parseCatalogParams } from "./catalog-params";
 import { buildIcs, icsText } from "./ics";
 
 describe("parseCatalogParams", () => {
@@ -18,6 +18,24 @@ describe("parseCatalogParams", () => {
   it("builds a clean query string and omits page 1", () => {
     expect(catalogQuery({ q: "Cumbayá", page: 3 }, { page: 1 })).toBe("q=Cumbay%C3%A1");
     expect(catalogQuery({ operation: "rent" }, { page: 2 })).toBe("operation=rent&page=2");
+  });
+});
+
+describe("catalogUrl", () => {
+  it("sends searchable combinations to their landing page", () => {
+    expect(catalogUrl({ operation: "sale" })).toBe("/venta");
+    expect(catalogUrl({ operation: "sale", type: "house", city: "Quito" })).toBe("/venta/casas/quito");
+    expect(catalogUrl({ operation: "rent", type: "office" }, { page: 3 })).toBe("/alquiler/oficinas?page=3");
+    expect(catalogUrl({ operation: "sale", type: "house", page: 4 }, { type: undefined, page: 1 })).toBe("/venta");
+  });
+
+  it("keeps narrower filters as a query on /propiedades", () => {
+    expect(isLandingShaped({ type: "house" })).toBe(false);
+    expect(isLandingShaped({ operation: "sale", sort: "price_asc" })).toBe(false);
+    expect(catalogUrl({ operation: "sale", bedrooms: 2 })).toBe("/propiedades?operation=sale&bedrooms=2");
+    expect(catalogUrl({ type: "land", city: "quito" })).toBe("/propiedades?type=land&city=quito");
+    expect(catalogUrl({ operation: "sale" }, { operation: undefined })).toBe("/propiedades");
+    expect(hasActiveFilters({ city: "quito" })).toBe(true);
   });
 });
 

@@ -2,16 +2,18 @@ import "server-only";
 import { cache } from "react";
 import { headers } from "next/headers";
 import { env } from "@/env";
-import { getCurrentTenant } from "@/server/tenant";
+import { getCurrentTenant, getHostTenant } from "@/server/tenant";
 import { getPublicSite, type PublicAgent } from "@/modules/agents/public";
+import { listCatalogFacets, PORTAL, type Scope } from "@/modules/properties/service";
 
 /**
  * Origin of the current request ("https://agente.ec"), used for canonical URLs, sitemap and
- * share links. The tenant itself is resolved from the same Host header on the server.
+ * share links. It reads the same `Host` header that resolves the tenant (never `x-forwarded-host`),
+ * so the canonical domain and the content can never belong to different tenants.
  */
 export const siteOrigin = cache(async (): Promise<string> => {
   const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
+  const host = h.get("host");
   if (!host || !/^[a-z0-9.-]+(:\d+)?$/i.test(host)) return env.APP_URL.replace(/\/$/, "");
   const local = /^(localhost|127\.0\.0\.1)(:\d+)?$/i.test(host);
   const proto = h.get("x-forwarded-proto")?.split(",")[0]?.trim() || (local ? "http" : "https");
@@ -31,6 +33,16 @@ export type SiteContext = {
   funnelSlugs: string[];
 };
 
+/** True when this host serves the portal (all agents) rather than one agent's site. */
+export const isPortal = cache(async (): Promise<boolean> => (await getHostTenant()) === null);
+
+/** Whose listings public reads return: every agent's on the portal, one tenant's on its site. */
+export const getScope = cache(async (): Promise<Scope> => (await getHostTenant())?.id ?? PORTAL);
+
+/** Name shown in titles and the header: the portal's brand or the agent's name. */
+export const siteName = cache(async (): Promise<string> => ((await isPortal()) ? env.PORTAL_NAME : (await getSite()).name));
+
+/** Agent site context. On the portal it is a 404: pages that call it exist only on an agent's site. */
 export const getSite = cache(async (): Promise<SiteContext> => {
   const tenant = await getCurrentTenant();
   const { agent, funnelSlugs } = await getPublicSite(tenant.id);
@@ -45,6 +57,9 @@ export const getSite = cache(async (): Promise<SiteContext> => {
     funnelSlugs,
   };
 });
+
+/** Live inventory by operation, type and city for the current tenant (one query per request). */
+export const getFacets = cache(async () => listCatalogFacets(await getScope()));
 
 /** "Asesor inmobiliario · Quito"-style descriptor built only from fields the agent filled in. */
 export function agentTagline(agent: PublicAgent | null): string | undefined {

@@ -1,0 +1,10 @@
+# Never upload local data or source documents (bank PDFs, agent photo) to Vercel.
+.data
+assets-input
+test-results
+playwright-report
+bench-shots
+shots
+.env*
+!.env.example
+/brand

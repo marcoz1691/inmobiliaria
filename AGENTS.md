@@ -21,6 +21,8 @@ Reglas para cualquier agente (Claude, Codex o humano). Texto de UI en español d
 ## Arquitectura
 - Next.js 16 App Router, TS strict, Tailwind v4, Drizzle (Postgres/Supabase en prod, PGlite en dev/test).
 - `cacheComponents` desactivado: el tenant se resuelve por Host (`src/server/tenant.ts`) y las páginas son dinámicas; lo publicado aparece al instante.
+- **Portal** (ADR 0002): un host que no es de un agente sirve el portal con las propiedades de todos (`isPortal()`/`getScope()` en `src/app/(public)/_lib/site.ts`). Lecturas del portal solo con `withPortal` (rol `portal_reader`, solo lectura y columnas públicas); escribir en un tenant desde el portal requiere derivar su id en el servidor (p. ej. `publicListingOwner`), nunca del cliente.
+- Provincias y cantones del Ecuador: `src/modules/geo/ecuador.ts`. No inventes ni edites a mano sin fuente.
 - Módulos en `src/modules/<modulo>/` (domain, repo, service). UI no importa `server/db` directamente: usa servicios.
 - **Aislamiento**: todo acceso a tablas de negocio pasa por `withTenant(db, tenantId, tx => …)` (`src/server/db/tenant-tx.ts`), que activa RLS con el rol `app_user`. Además filtra siempre por `tenant_id`. El `tenantId` sale de `getCurrentTenant()` / `requireMember()`, nunca del cliente.
 - Validación con Zod compartida cliente/servidor. Variables en `src/env.ts`; nada de `process.env` suelto.

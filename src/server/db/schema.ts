@@ -25,6 +25,14 @@ import {
  *     (see `withTenant` in ./tenant-tx.ts). Auth and system tables are not reachable by `app_user`.
  */
 export const appUser = pgRole("app_user").existing();
+/**
+ * Read-only role for the public portal: sees what any visitor may see across all tenants
+ * (public listings, their photos, agent public profiles) and nothing else. Column grants in
+ * drizzle/0005 keep private columns (review notes, import data, user links) out of reach.
+ */
+export const portalReader = pgRole("portal_reader").existing();
+
+const PUBLIC_STATUS_SQL = sql`status in ('published', 'reserved', 'sold', 'rented')`;
 
 const tenantIsolation = (table: string) =>
   pgPolicy(`${table}_tenant_isolation`, {
@@ -115,6 +123,10 @@ export const tenants = pgTable("tenants", {
   locale: text("locale").notNull().default("es-EC"),
   /** Brand tokens editable from the panel: { accent, logoUrl, tagline }. */
   branding: jsonb("branding").$type<TenantBranding>().notNull().default({}),
+  /** Subscription plan (src/modules/billing/plans.ts). Set by billing or `npm run plan:set`. */
+  plan: text("plan").notNull().default("free"),
+  /** End of the paid period; past it the workspace behaves as "free". Null = no expiry. */
+  planExpiresAt: timestamp("plan_expires_at", { withTimezone: true }),
   createdAt: createdAt(),
   updatedAt: updatedAt(),
 }, () => [
@@ -125,6 +137,7 @@ export const tenants = pgTable("tenants", {
     to: appUser,
     using: sql`id = nullif(current_setting('app.tenant_id', true), '')::uuid`,
   }),
+  pgPolicy("tenants_portal_read", { as: "permissive", for: "select", to: portalReader, using: sql`true` }),
 ]);
 
 export type TenantBranding = { accent?: string; logoUrl?: string; tagline?: string };
@@ -176,7 +189,11 @@ export const agentProfiles = pgTable(
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
-  (t) => [uniqueIndex("agent_profiles_tenant_slug_uq").on(t.tenantId, t.slug), tenantIsolation("agent_profiles")],
+  (t) => [
+    uniqueIndex("agent_profiles_tenant_slug_uq").on(t.tenantId, t.slug),
+    tenantIsolation("agent_profiles"),
+    pgPolicy("agent_profiles_portal_read", { as: "permissive", for: "select", to: portalReader, using: sql`true` }),
+  ],
 );
 
 /* ───────────────────────────── Properties & media ───────────────────────────── */
@@ -241,11 +258,13 @@ export const properties = pgTable(
     updatedAt: updatedAt(),
   },
   (t) => [
-    uniqueIndex("properties_tenant_slug_uq").on(t.tenantId, t.slug),
+    // Global: the portal serves every tenant's listings under /propiedades/<slug>.
+    uniqueIndex("properties_slug_uq").on(t.slug),
     index("properties_tenant_status_idx").on(t.tenantId, t.status, t.publishedAt),
     index("properties_tenant_filters_idx").on(t.tenantId, t.operation, t.propertyType, t.city),
     index("properties_tenant_price_idx").on(t.tenantId, t.price),
     tenantIsolation("properties"),
+    pgPolicy("properties_portal_read", { as: "permissive", for: "select", to: portalReader, using: PUBLIC_STATUS_SQL }),
   ],
 );
 
@@ -274,6 +293,13 @@ export const propertyMedia = pgTable(
     index("property_media_property_idx").on(t.tenantId, t.propertyId, t.position),
     uniqueIndex("property_media_one_cover_uq").on(t.propertyId).where(sql`${t.isCover}`),
     tenantIsolation("property_media"),
+    // Photos of listings the portal can see (the subquery runs under properties' portal policy).
+    pgPolicy("property_media_portal_read", {
+      as: "permissive",
+      for: "select",
+      to: portalReader,
+      using: sql`exists (select 1 from properties p where p.id = property_id)`,
+    }),
   ],
 );
 

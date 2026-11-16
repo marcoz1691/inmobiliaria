@@ -22,9 +22,9 @@ export type PanelButtonProps = CommonProps & (AnchorProps | NativeProps);
 
 const VARIANT: Record<PanelButtonVariant, string> = {
   filled: "bg-navy text-white font-semibold hover:bg-navy-hover",
-  tinted: "bg-navy/10 text-navy font-semibold hover:bg-navy/15",
+  tinted: "bg-navy/10 text-navy-hover font-semibold hover:bg-navy/15",
   gray: "bg-ink/[0.06] text-ink font-medium hover:bg-ink/10",
-  plain: "text-navy font-medium hover:bg-navy/[0.07]",
+  plain: "text-navy-hover font-medium hover:bg-navy/[0.07]",
   destructive: "bg-sold text-white font-semibold hover:bg-sold/90",
 };
 

@@ -10,6 +10,7 @@ export const metadata: Metadata = { title: "Más" };
 const TONE: Record<string, TileTone> = {
   "/panel/importar": "amber",
   "/panel/embudos": "clay",
+  "/panel/plan": "amber",
   "/panel/perfil": "navy",
   "/panel/integraciones": "gray",
 };
@@ -17,6 +18,7 @@ const TONE: Record<string, TileTone> = {
 const DETAIL: Record<string, string> = {
   "/panel/importar": "Convierte fichas en borradores",
   "/panel/embudos": "Califica y agenda desde tus anuncios",
+  "/panel/plan": "Límites, uso y planes",
   "/panel/perfil": "Lo que muestra tu sitio",
   "/panel/integraciones": "Correo, WhatsApp, Meta, Google",
 };

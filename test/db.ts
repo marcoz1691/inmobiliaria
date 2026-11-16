@@ -6,8 +6,9 @@ export async function testDb(): Promise<Db> {
   return createDb({ databaseUrl: "", pgliteDir: "memory" });
 }
 
-export async function seedTenant(db: Db, slug: string) {
-  const [tenant] = await db.insert(tenants).values({ slug, name: `Tenant ${slug}` }).returning();
+/** Test workspaces get the largest plan so listing limits never get in the way; plan tests pass `plan`. */
+export async function seedTenant(db: Db, slug: string, plan: "free" | "agente" | "pro" | "inmobiliaria" = "inmobiliaria") {
+  const [tenant] = await db.insert(tenants).values({ slug, name: `Tenant ${slug}`, plan }).returning();
   const [agent] = await db
     .insert(agentProfiles)
     .values({ tenantId: tenant!.id, slug: `agente-${slug}`, displayName: `Agente ${slug}`, isPrimary: true })

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { requireMember } from "@/server/session";
+import { aiImportAvailable } from "@/modules/imports/ai";
 import { listImports } from "@/modules/imports/service";
 import { PageHeader } from "@/components/admin/PageHeader";
 import { PdfImporter } from "@/components/admin/PdfImporter";
@@ -22,8 +23,12 @@ export default async function ImportPage() {
   const rows = await listImports(m);
   return (
     <div className="mx-auto max-w-3xl">
-      <PageHeader eyebrow="Propiedades" title="Importar PDF" description="Convierte fichas técnicas y catálogos en borradores. Revisas y publicas tú." />
-      <PdfImporter />
+      <PageHeader
+        eyebrow="Propiedades"
+        title="Publicar desde un PDF"
+        description="Sube la ficha, el folleto o el catálogo: un agente de IA arma la publicación con sus datos y fotos. Revisas y publicas tú."
+      />
+      <PdfImporter ai={aiImportAvailable()} />
       <div className="mt-10">
         {rows.length ? (
           <ListGroup title="Importaciones anteriores" titleId="history">
@@ -38,6 +43,7 @@ export default async function ImportPage() {
                   subtitle={
                     <span className="flex flex-wrap items-center gap-x-2 gap-y-1">
                       <Pill tone={st.tone}>{st.label}</Pill>
+                      {r.method === "ai" ? <Pill tone="blue">Leído con IA</Pill> : null}
                       <span>
                         {date.format(r.createdAt)}
                         {r.pageCount ? ` · ${r.pageCount} pág.` : ""}

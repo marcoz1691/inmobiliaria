@@ -39,6 +39,8 @@ export function PropertyWizard({ property, initialForm, photos: initialPhotos }:
   const [status, setStatus] = useState(property.status);
   const [slug, setSlug] = useState(property.slug);
   const [needsReview, setNeedsReview] = useState(property.needsReview);
+  // Set by the AI PDF reader (src/modules/imports/ai.ts, AI_REVIEW_NOTE).
+  const byAi = property.reviewNotes?.includes("Completado por IA") ?? false;
   const [reviewMsg, setReviewMsg] = useState<{ text: string; error?: boolean } | null>(null);
   const [reviewPending, setReviewPending] = useState(false);
   const [touched, setTouched] = useState<Set<FieldName>>(new Set());
@@ -217,10 +219,12 @@ export function PropertyWizard({ property, initialForm, photos: initialPhotos }:
             <Icon name="alert" className="mt-0.5 size-5 shrink-0 text-reserved" strokeWidth={2} />
             <div className="min-w-0">
               <h2 id="review-banner" className="text-[1.0625rem] font-semibold text-ink">
-                Revisa los datos importados
+                {byAi ? "La IA llenó esta publicación: revísala" : "Revisa los datos importados"}
               </h2>
               <p className="mt-1 text-sm leading-relaxed text-ink">
-                Este borrador se creó a partir de un PDF. Los campos marcados con «Verifica este dato» se leyeron con dudas o faltan. No se puede publicar hasta que marques la revisión como completa.
+                {byAi
+                  ? "Un agente de IA leyó tu PDF y completó los datos y las fotos. Puede equivocarse: revisa cada campo, sobre todo los marcados con «Verifica este dato». No se publica hasta que marques la revisión como completa."
+                  : "Este borrador se creó a partir de un PDF. Los campos marcados con «Verifica este dato» se leyeron con dudas o faltan. No se puede publicar hasta que marques la revisión como completa."}
               </p>
               {property.reviewNotes ? (
                 <details className="group mt-1 text-sm text-ink">

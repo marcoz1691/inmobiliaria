@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 112" role="img" aria-label="NestAndes by MarcsIntelligence">
+  <title>NestAndes · M de nodos (blancos)</title>
+  <g transform="translate(0 8)">
+    <rect width="96" height="96" rx="24" fill="#2F855A"/>
+    <path d="M22 58 L34 28 L48 46 L62 28 L74 58" fill="none" stroke="#fff" stroke-width="4" stroke-linejoin="round"/>
+    <circle cx="22" cy="58" r="5.5" fill="#fff"/><circle cx="34" cy="28" r="5.5" fill="#fff"/><circle cx="48" cy="46" r="5.5" fill="#fff"/><circle cx="62" cy="28" r="5.5" fill="#fff"/><circle cx="74" cy="58" r="5.5" fill="#fff"/>
+    <path d="M24 68c6 12 42 12 48 0" fill="none" stroke="#FBD38D" stroke-width="6" stroke-linecap="round"/>
+  </g>
+  <text x="118" y="66" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#1F2937">nest<tspan fill="#2F855A">andes</tspan></text>
+  <text x="121" y="94" font-family="Inter, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="500" letter-spacing="0.5" fill="#6B7280">by <tspan font-weight="700" fill="#374151">MarcsIntelligence</tspan></text>
+</svg>

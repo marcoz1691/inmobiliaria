@@ -141,6 +141,10 @@ export const catalogFiltersSchema = z.object({
   operation: z.enum(OPERATIONS).optional().catch(undefined),
   type: z.enum(PROPERTY_TYPES).optional().catch(undefined),
   q: z.string().trim().max(80).optional().catch(undefined),
+  /** City as typed or as a slug ("Quito", "quito"); matched by slug against the catalog's cities. */
+  city: z.string().trim().max(80).optional().catch(undefined),
+  /** Province slug ("pichincha"); listings whose canton lies in it match even without a typed province. */
+  province: z.string().trim().max(80).optional().catch(undefined),
   minPrice: z.coerce.number().min(0).optional().catch(undefined),
   maxPrice: z.coerce.number().min(0).optional().catch(undefined),
   bedrooms: z.coerce.number().int().min(0).max(20).optional().catch(undefined),

@@ -13,6 +13,9 @@ const serverEnv = {
   SEED_OWNER_PASSWORD: process.env.E2E_PASSWORD,
   APP_URL: `http://localhost:${PORT}`,
   SEED_E2E_FIXTURES: "1",
+  // localhost serves the pilot agent's site (most specs); 127.0.0.1 is the portal (portal.spec.ts).
+  SEED_TENANT_DOMAINS: "localhost",
+  SEED_PLAN: "inmobiliaria",
 };
 
 export default defineConfig({

@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 112" role="img" aria-label="NestAndes by MarcsIntelligence">
+  <title>NestAndes by MarcsIntelligence · Azul noche + verde andino</title>
+  <!-- Mark: the M of MarcsIntelligence (two Andean peaks) rising out of a woven nest. -->
+  <g transform="translate(0 8)">
+    <rect width="96" height="96" rx="24" fill="#0B2545"/>
+    <path d="M29 56V24l19 20 19-20v32" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M15 52h66c0 16-15 27-33 27S15 68 15 52Z" fill="#3BB273"/>
+    <path d="M21 60c9 4 45 4 54 0M26 68c8 3 36 3 44 0" fill="none" stroke="#0B2545" stroke-width="2.6" stroke-linecap="round" opacity=".55"/>
+    <path d="M33 55l5 9M45 55l4 10M57 55l-4 10M66 55l-5 9" stroke="#0B2545" stroke-width="2.2" stroke-linecap="round" opacity=".35"/>
+  </g>
+  <text x="118" y="66" font-family="Inter, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" font-size="52" font-weight="700" letter-spacing="-2" fill="#0B2545">nest<tspan fill="#2E9D63">andes</tspan></text>
+  <text x="121" y="94" font-family="Inter, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" font-size="15" font-weight="500" letter-spacing="0.5" fill="#6B7280">by <tspan font-weight="700" fill="#374151">MarcsIntelligence</tspan></text>
+</svg>

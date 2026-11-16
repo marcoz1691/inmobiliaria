@@ -47,26 +47,34 @@ export async function getPublicSite(tenantId: string): Promise<PublicSite> {
         .orderBy(asc(funnels.createdAt)),
     ]);
     const a = agentRows[0];
-    const socials: SocialLinks = {};
-    for (const [k, v] of Object.entries(a?.socials ?? {})) {
-      // Only absolute https links are rendered; anything else is ignored rather than "fixed".
-      if (typeof v === "string" && /^https:\/\/\S+$/.test(v.trim())) socials[k as keyof SocialLinks] = v.trim();
-    }
-    const agent: PublicAgent | null = a
-      ? {
-          id: a.id,
-          displayName: a.displayName,
-          headline: blank(a.headline),
-          bio: blank(a.bio),
-          photoUrl: blank(a.photoUrl),
-          phone: blank(a.phone),
-          whatsapp: blank(a.whatsapp),
-          email: blank(a.email),
-          city: blank(a.city),
-          socials,
-          affiliation: blank(a.affiliation),
-        }
-      : null;
+    const agent = a ? toPublicAgent(a) : null;
     return { agent, funnelSlugs: funnelRows.map((f) => f.slug) };
   });
+}
+
+type AgentRow = Pick<
+  typeof agentProfiles.$inferSelect,
+  "id" | "displayName" | "headline" | "bio" | "photoUrl" | "phone" | "whatsapp" | "email" | "city" | "socials" | "affiliation"
+>;
+
+/** Public shape of an agent profile: blanks become null, only absolute https social links survive. */
+export function toPublicAgent(a: AgentRow): PublicAgent {
+  const socials: SocialLinks = {};
+  for (const [k, v] of Object.entries(a.socials ?? {})) {
+    // Only absolute https links are rendered; anything else is ignored rather than "fixed".
+    if (typeof v === "string" && /^https:\/\/\S+$/.test(v.trim())) socials[k as keyof SocialLinks] = v.trim();
+  }
+  return {
+    id: a.id,
+    displayName: a.displayName,
+    headline: blank(a.headline),
+    bio: blank(a.bio),
+    photoUrl: blank(a.photoUrl),
+    phone: blank(a.phone),
+    whatsapp: blank(a.whatsapp),
+    email: blank(a.email),
+    city: blank(a.city),
+    socials,
+    affiliation: blank(a.affiliation),
+  };
 }

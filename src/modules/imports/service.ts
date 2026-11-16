@@ -11,6 +11,10 @@ import { errorInfo, log } from "@/lib/logger";
 import { audit } from "@/modules/audit/audit";
 import { getPrivateStorage, getStorage } from "@/modules/media/storage";
 import { addPhoto, createImportedDraft, listByImport, listDedupeCandidates } from "@/modules/properties/service";
+import { rateLimit } from "@/server/rate-limit";
+import { AI_WINDOW_SECONDS, aiQuotaKey, planOf } from "@/modules/billing/service";
+import { planLimitMessage } from "@/modules/billing/plans";
+import { aiImportAvailable, extractWithAi } from "./ai";
 import { extractFromPdf } from "./extract";
 import { extractPdfImages } from "./images";
 import { findDuplicates } from "./duplicates";
@@ -38,7 +42,12 @@ export type StoredListing = ExtractedListing & { outcome?: ListingOutcome };
 export type ImportResult =
   | { kind: "already_imported"; importId: string; fileName: string }
   | { kind: "needs_ocr"; importId: string; message: string }
-  | { kind: "parsed"; importId: string; created: number; skipped: number; warnings: string[] };
+  | { kind: "parsed"; importId: string; created: number; skipped: number; warnings: string[]; method: "parser" | "ai" };
+
+export const AI_WARNINGS = {
+  failed: "La IA no pudo leer este PDF ahora. Se usó la lectura automática.",
+  empty: "La IA no encontró propiedades con datos suficientes en este PDF.",
+} as const;
 
 const run = async <T>(tenantId: string, fn: (tx: Tx) => Promise<T>) => withTenant(await getDb(), tenantId, fn);
 
@@ -121,7 +130,28 @@ export async function importPdf(m: MemberContext, fileName: string, data: Buffer
   const importId = inserted.id;
 
   try {
-    const result = await extractFromPdf(new Uint8Array(data));
+    const parsed = await extractFromPdf(new Uint8Array(data));
+    // The AI agent reads any layout (and scanned pages); the rule-based parser is the fallback.
+    const result = { ...parsed, method: "parser" as "parser" | "ai", warnings: [...parsed.warnings] };
+    if (aiImportAvailable()) {
+      // AI reads are the plan's metered resource (each costs real money).
+      const plan = await run(m.tenantId, (tx) => planOf(tx, m.tenantId));
+      if (!(await rateLimit(aiQuotaKey(m.tenantId), plan.aiImportsPerMonth, AI_WINDOW_SECONDS))) {
+        result.warnings.unshift(planLimitMessage(plan, "ai"));
+      } else {
+        try {
+          const ai = await extractWithAi(data);
+          if (ai?.listings.length) {
+            Object.assign(result, { listings: ai.listings, warnings: ai.warnings, method: "ai", needsOcr: false });
+          } else {
+            result.warnings.unshift(AI_WARNINGS.empty);
+          }
+        } catch (err) {
+          log.warn("ai import failed, using parser", { importId, ...errorInfo(err) });
+          result.warnings.unshift(AI_WARNINGS.failed);
+        }
+      }
+    }
     if (result.needsOcr) {
       await run(m.tenantId, (tx) =>
         tx
@@ -129,7 +159,11 @@ export async function importPdf(m: MemberContext, fileName: string, data: Buffer
           .set({ status: "parsed", pageCount: result.pageCount, extractedText: result.text, extracted: [], method: "parser", error: NEEDS_OCR_MESSAGE })
           .where(and(eq(imports.tenantId, m.tenantId), eq(imports.id, importId))),
       );
-      return { kind: "needs_ocr", importId, message: NEEDS_OCR_MESSAGE };
+      return {
+        kind: "needs_ocr",
+        importId,
+        message: aiImportAvailable() ? "PDF escaneado que no pudimos leer. Crea la propiedad a mano y sube las fotos." : NEEDS_OCR_MESSAGE,
+      };
     }
 
     const candidates = await listDedupeCandidates(m);
@@ -184,7 +218,7 @@ export async function importPdf(m: MemberContext, fileName: string, data: Buffer
         })
         .where(and(eq(imports.tenantId, m.tenantId), eq(imports.id, importId))),
     );
-    return { kind: "parsed", importId, created, skipped: stored.length - created, warnings: result.warnings };
+    return { kind: "parsed", importId, created, skipped: stored.length - created, warnings: result.warnings, method: result.method };
   } catch (err) {
     log.error("import failed", { importId, ...errorInfo(err) });
     await run(m.tenantId, (tx) =>
@@ -200,7 +234,7 @@ export async function importPdf(m: MemberContext, fileName: string, data: Buffer
 export async function listImports(m: MemberContext) {
   return run(m.tenantId, (tx) =>
     tx
-      .select({ id: imports.id, fileName: imports.fileName, status: imports.status, pageCount: imports.pageCount, createdAt: imports.createdAt, error: imports.error })
+      .select({ id: imports.id, fileName: imports.fileName, status: imports.status, method: imports.method, pageCount: imports.pageCount, createdAt: imports.createdAt, error: imports.error })
       .from(imports)
       .where(eq(imports.tenantId, m.tenantId))
       .orderBy(desc(imports.createdAt))

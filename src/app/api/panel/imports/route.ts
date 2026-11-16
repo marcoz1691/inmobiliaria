@@ -4,7 +4,8 @@ import { getMember } from "@/server/session";
 import { importPdf, MAX_PDF_BYTES } from "@/modules/imports/service";
 import { jsonError, sameOrigin } from "@/app/panel/_server/act";
 
-export const maxDuration = 60;
+// The AI reader can take a couple of minutes on long catalogs.
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   if (!sameOrigin(req)) return jsonError(403, "Origen no permitido.");

@@ -39,7 +39,7 @@ export default async function AgendaPage() {
             <BookingDate date={b.startsAt} />
             <div className="min-w-0">
               {b.dealId ? (
-                <Link href={`/panel/prospectos/${b.dealId}`} className={cn("block truncate text-base font-medium text-ink hover:text-navy", rowInteractive, "rounded-xs")}>
+                <Link href={`/panel/prospectos/${b.dealId}`} className={cn("block truncate text-base font-medium text-ink hover:text-navy-hover", rowInteractive, "rounded-xs")}>
                   {who}
                 </Link>
               ) : (

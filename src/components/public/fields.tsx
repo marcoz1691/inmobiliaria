@@ -82,7 +82,7 @@ export function ConsentCheckbox({ id, text, error, name = "consent", ...input }:
         />
         <div className="text-sm leading-relaxed text-ink-muted">
           <label htmlFor={id}>{text}</label>{" "}
-          <Link href="/privacidad" className="text-link underline-offset-4 hover:underline">
+          <Link href="/privacidad" className="text-link underline underline-offset-4 hover:decoration-2">
             Política de privacidad
           </Link>
         </div>

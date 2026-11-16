@@ -107,7 +107,7 @@ export default async function DashboardPage() {
             title="Próximas citas"
             titleId="next-bookings"
             action={
-              <Link href="/panel/agenda" className="inline-flex min-h-11 items-center rounded-full px-2 text-[0.9375rem] text-navy hover:bg-navy/[0.07]">
+              <Link href="/panel/agenda" className="inline-flex min-h-11 items-center rounded-full px-2 text-[0.9375rem] text-navy-hover hover:bg-navy/[0.07]">
                 Ver agenda
               </Link>
             }

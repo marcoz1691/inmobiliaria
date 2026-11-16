@@ -5,13 +5,13 @@ import { useEffect, useId, useRef, useState, type CSSProperties } from "react";
 import { Button } from "@/components/ui/Button";
 import type { NavItem } from "./SiteHeader";
 
-type MobileNavProps = { nav: NavItem[]; ctaHref: string; ctaLabel: string };
+type MobileNavProps = { nav: NavItem[]; ctaHref: string; ctaLabel: string; /** Hides the menu where the full bar shows. */ className?: string };
 
 /**
  * Full-screen disclosure navigation for small screens: Escape closes and returns focus to the
  * toggle, page scroll is locked while open, links rise in one after another.
  */
-export function MobileNav({ nav, ctaHref, ctaLabel }: MobileNavProps) {
+export function MobileNav({ nav, ctaHref, ctaLabel, className = "md:hidden" }: MobileNavProps) {
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const toggleRef = useRef<HTMLButtonElement>(null);
@@ -49,7 +49,7 @@ export function MobileNav({ nav, ctaHref, ctaLabel }: MobileNavProps) {
   const rise = (i: number): CSSProperties => ({ animationDelay: `${60 + i * 50}ms` });
 
   return (
-    <div className="md:hidden">
+    <div className={className}>
       <button
         ref={toggleRef}
         type="button"

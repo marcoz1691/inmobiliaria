@@ -2,7 +2,7 @@ import { STATUS_LABEL, type PropertyStatus } from "@/modules/properties/domain";
 import { cn } from "@/components/ui/cn";
 
 const TONE: Record<PropertyStatus, { pill: string; dot: string }> = {
-  draft: { pill: "bg-ink/[0.06] text-ink-muted", dot: "bg-ink-muted/70" },
+  draft: { pill: "bg-ink/[0.06] text-ink/75", dot: "bg-ink-muted/70" },
   published: { pill: "bg-available-bg text-available", dot: "bg-available" },
   paused: { pill: "bg-ink/[0.06] text-ink", dot: "bg-reserved" },
   reserved: { pill: "bg-reserved-bg text-reserved", dot: "bg-reserved" },
@@ -25,7 +25,7 @@ export function StatusTag({ status, className }: { status: PropertyStatus; class
 /** Same capsule for other small labels (review pending, funnel status…). */
 export function Pill({ tone = "gray", children, className }: { tone?: "gray" | "green" | "amber" | "red" | "blue"; children: React.ReactNode; className?: string }) {
   const TONES = {
-    gray: { pill: "bg-ink/[0.06] text-ink-muted", dot: "bg-ink-muted/70" },
+    gray: { pill: "bg-ink/[0.06] text-ink/75", dot: "bg-ink-muted/70" },
     green: { pill: "bg-available-bg text-available", dot: "bg-available" },
     amber: { pill: "bg-reserved-bg text-reserved", dot: "bg-reserved" },
     red: { pill: "bg-sold-bg text-sold", dot: "bg-sold" },
