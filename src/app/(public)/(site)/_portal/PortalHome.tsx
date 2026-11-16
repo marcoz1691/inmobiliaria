@@ -29,7 +29,7 @@ function provinceCounts(facets: Facet[]) {
  * Ecuador), then entry points by type and province, the newest listings and, last, the
  * invitation for agents to publish.
  */
-export async function PortalHome({ facets, name }: { facets: Facet[]; name: string }) {
+export async function PortalHome({ facets }: { facets: Facet[] }) {
   const latest = (await listFeatured(PORTAL, 9)).map(toCardProperty);
   const categories = topCategories(facets, 8);
   const provinces = provinceCounts(facets);
@@ -42,8 +42,7 @@ export async function PortalHome({ facets, name }: { facets: Facet[]; name: stri
       <section aria-labelledby="hero-title" className="bg-paper pb-14 lg:pb-20">
         <div className={`${container} pt-12 sm:pt-16 lg:pt-20`}>
           <div className="mx-auto max-w-4xl text-center">
-            <p className="text-eyebrow text-clay">{name}</p>
-            <h1 id="hero-title" className="mt-3 font-display text-display-xl text-balance text-ink">
+            <h1 id="hero-title" className="font-display text-display-xl text-balance text-ink">
               Casas, departamentos, terrenos y oficinas en todo Ecuador.
             </h1>
             <p className="mx-auto mt-5 max-w-2xl text-lead text-pretty text-ink-muted">

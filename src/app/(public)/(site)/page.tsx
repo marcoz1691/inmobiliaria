@@ -61,7 +61,7 @@ function featuredSpan(i: number, n: number): string {
 }
 
 export default async function HomePage() {
-  if (await isPortal()) return <PortalHome facets={await getFacets()} name={env.PORTAL_NAME} />;
+  if (await isPortal()) return <PortalHome facets={await getFacets()} />;
   const [site, facets] = await Promise.all([getSite(), getFacets()]);
   const categories = topCategories(facets, 8);
   const featured = (await listFeatured(site.tenantId, 6)).map(toCardProperty);
