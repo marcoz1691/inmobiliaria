@@ -1,4 +1,5 @@
 "use client";
+import { useUpgradePrompt } from "./UpgradeSheet";
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -35,6 +36,7 @@ export function PropertyActions({ id, title, status, slug }: Props) {
   const [pending, start] = useTransition();
   const name = title || "Propiedad sin título";
   const menu = useRef<HTMLDetailsElement>(null);
+  const upgrade = useUpgradePrompt();
   const closeMenu = () => {
     if (menu.current) menu.current.open = false;
   };
@@ -47,7 +49,7 @@ export function PropertyActions({ id, title, status, slug }: Props) {
         setError(null);
         toast.success(done);
         router.refresh();
-      } else setError(r.error);
+      } else if (!upgrade.handled(r)) setError(r.error);
     });
   }
 
@@ -64,6 +66,7 @@ export function PropertyActions({ id, title, status, slug }: Props) {
 
   return (
     <div className="flex flex-wrap items-start gap-2">
+      {upgrade.sheet}
       <Link href={`/panel/propiedades/${id}`} className={cn(pillClass, "bg-navy/10 font-semibold text-navy-hover hover:bg-navy/15")}>
         <Icon name="pencil" className="size-4" strokeWidth={2} />
         Editar<span className="sr-only"> {name}</span>

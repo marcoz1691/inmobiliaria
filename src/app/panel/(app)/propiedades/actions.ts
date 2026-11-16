@@ -3,6 +3,7 @@ import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { act, isUuid } from "@/app/panel/_server/act";
+import { assertRoomForNewListing } from "@/modules/billing/service";
 import * as properties from "@/modules/properties/service";
 import { STATUSES, type PropertyStatus } from "@/modules/properties/domain";
 import { notFound } from "@/lib/errors";
@@ -16,6 +17,7 @@ const id = (v: string) => {
 /** Step 1 of the wizard: creates the draft with the basics and continues to photos. */
 export async function createPropertyAction(input: unknown): Promise<ActionResult<{ id: string }>> {
   const result = await act("property.create", async (m) => {
+    await assertRoomForNewListing(m);
     const draft = await properties.createDraft(m, typeof (input as { title?: unknown })?.title === "string" ? (input as { title: string }).title.slice(0, 140) : "");
     await properties.updateDraft(m, draft.id, input);
     return { id: draft.id };

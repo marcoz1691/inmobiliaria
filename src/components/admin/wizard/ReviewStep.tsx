@@ -1,4 +1,5 @@
 "use client";
+import { useUpgradePrompt } from "../UpgradeSheet";
 import { useState } from "react";
 import { PropertyCard } from "@/components/public/PropertyCard";
 import { PropertyFacts } from "@/components/public/PropertyFacts";
@@ -65,6 +66,8 @@ export function ReviewStep({ propertyId, form, photos, priceKind, problems, stat
   const canPublish = problems.length === 0 && (status === "draft" || status === "paused");
   const isPublic = ["published", "reserved", "sold", "rented"].includes(status);
 
+  const upgrade = useUpgradePrompt();
+
   async function publish() {
     setPending(true);
     setError(null);
@@ -77,7 +80,8 @@ export function ReviewStep({ propertyId, form, photos, priceKind, problems, stat
     const r = await changeStatusAction(propertyId, "published");
     setPending(false);
     if (!r.ok) {
-      setError(r.error);
+      // Plan limit: show the plans, not only a red line.
+      if (!upgrade.handled(r)) setError(r.error);
       return;
     }
     onStatus(r.data.status);
@@ -86,6 +90,7 @@ export function ReviewStep({ propertyId, form, photos, priceKind, problems, stat
 
   return (
     <div className="grid gap-6">
+      {upgrade.sheet}
       {justPublished || isPublic ? (
         <div role="status" className={cn(card, "flex flex-col items-center px-5 py-8 text-center sm:py-10")}>
           <span className="grid size-14 place-items-center rounded-full bg-available-bg text-available">

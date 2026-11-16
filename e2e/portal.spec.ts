@@ -1,4 +1,5 @@
 import { expect as baseExpect, test } from "@playwright/test";
+import { makePhotos } from "./fixtures/images";
 import { waitForFormMinAge } from "./helpers";
 
 // The pilot agent's site is on localhost (SEED_TENANT_DOMAINS); any other host is the portal.
@@ -77,4 +78,48 @@ test("an agent signs up on the portal and lands in their own panel", async ({ pa
   await page.getByRole("button", { name: "Crear cuenta" }).click();
   // Scoped to the form: Next's route announcer is also a role="alert".
   await expect(page.locator("form").getByRole("alert")).toContainText("Ya existe una cuenta");
+});
+
+test("a free agent who reaches the plan limit is offered the paid plans", async ({ page }) => {
+  test.setTimeout(400_000);
+  const photos = await makePhotos(1);
+  await page.goto(`${PORTAL}/panel/registro`);
+  const loadedAt = Date.now();
+  await page.getByLabel("Nombre y apellido").fill("Agente Plan Gratis");
+  await page.getByLabel("Correo").fill(`gratis-${Date.now()}@example.com`);
+  await page.getByLabel("Contraseña").fill("clave-segura-e2e");
+  await waitForFormMinAge(loadedAt);
+  await page.getByRole("button", { name: "Crear cuenta" }).click();
+  await expect(page).toHaveURL(/\/panel\/plan/, { timeout: 60_000 });
+
+  async function createAndPublish(title: string) {
+    await page.goto(`${PORTAL}/panel/propiedades/nueva`);
+    await page.getByLabel("Título").fill(title);
+    await page.getByLabel("Tipo de propiedad").selectOption("house");
+    await page.getByText("Venta", { exact: true }).click();
+    await page.getByLabel("Precio (US$)").fill("120000");
+    await page.getByLabel("Provincia").selectOption({ label: "Azuay" });
+    await page.getByLabel("Ciudad o cantón").selectOption("cuenca");
+    await page.getByRole("button", { name: "Siguiente: Fotos" }).click();
+    await expect(page).toHaveURL(/paso=fotos$/, { timeout: 60_000 });
+    await page.locator('input[type="file"][accept="image/*"]').setInputFiles(photos);
+    await expect(page.getByTestId("photo-list").locator("li")).toHaveCount(1, { timeout: 30_000 });
+    await page.getByRole("button", { name: "Siguiente: Detalles" }).click();
+    await page.getByRole("button", { name: "Siguiente: Revisar y publicar" }).click();
+    await expect(page.getByRole("heading", { name: "Todo listo para publicar" })).toBeVisible({ timeout: 30_000 });
+    await page.getByRole("button", { name: "Publicar", exact: true }).click();
+  }
+
+  await createAndPublish("Casa de prueba gratis número uno");
+  await expect(page.getByRole("heading", { name: /Publicada/ })).toBeVisible({ timeout: 30_000 });
+
+  // At the limit, the plans show up as soon as the agent starts a new listing, before any typing.
+  await page.goto(`${PORTAL}/panel/propiedades/nueva`);
+  await expect(page.getByLabel("Título")).toHaveCount(0);
+  const sheet = page.getByRole("dialog", { name: "Publica más con un plan pagado" });
+  await expect(sheet).toBeVisible({ timeout: 30_000 });
+  await expect(sheet).toContainText("Tu plan Gratis permite 1 propiedad publicada");
+  await expect(sheet.getByText("Pro", { exact: true })).toBeVisible();
+  await sheet.getByRole("link", { name: "Ver planes y mejorar" }).click();
+  await expect(page).toHaveURL(/\/panel\/plan$/);
 });

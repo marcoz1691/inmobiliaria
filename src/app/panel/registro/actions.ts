@@ -35,7 +35,8 @@ export async function register(_prev: RegisterState, fd: FormData): Promise<Regi
     token: fd.get("form_token"),
     minMs: 3000,
     scope: "signup",
-    max: 5,
+    // Per IP and hour: stops scripted sign-ups, still lets an office register its team.
+    max: 10,
     windowSec: 3600,
   });
   if (guard) return { status: "error", message: GUARD_MESSAGE[guard], values };

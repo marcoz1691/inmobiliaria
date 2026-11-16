@@ -13,4 +13,7 @@ export class AppError extends Error {
 export const notFound = (what = "Recurso") => new AppError("not_found", `${what} no se encontró`);
 export const forbidden = () => new AppError("forbidden", "No tienes permiso para esta acción");
 
-export type ActionResult<T = undefined> = { ok: true; data: T } | { ok: false; error: string; fieldErrors?: Record<string, string[]> };
+export type ActionResult<T = undefined> =
+  | { ok: true; data: T }
+  /** `upgrade`: the plan's limit was reached; the panel offers the plans instead of a bare error. */
+  | { ok: false; error: string; fieldErrors?: Record<string, string[]>; upgrade?: boolean };

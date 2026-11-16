@@ -16,7 +16,12 @@ export async function act<T>(name: string, fn: (m: MemberContext) => Promise<T>)
     if (err instanceof AppError) {
       const issues = err.details?.issues as Record<string, string[]> | undefined;
       const problems = err.details?.problems as string[] | undefined;
-      return { ok: false, error: problems?.length ? `${err.message}: ${problems.join(" ")}` : err.message, fieldErrors: issues };
+      return {
+        ok: false,
+        error: problems?.length ? `${err.message}: ${problems.join(" ")}` : err.message,
+        fieldErrors: issues,
+        ...(err.details?.upgrade ? { upgrade: true } : {}),
+      };
     }
     log.error("panel action failed", { action: name, ...errorInfo(err) });
     return { ok: false, error: "Algo salió mal. Inténtalo de nuevo en unos segundos." };

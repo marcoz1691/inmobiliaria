@@ -45,6 +45,12 @@ export async function assertCanFeature(tx: Tx, tenantId: string, propertyId: str
   if (n >= plan.maxFeatured) throw new AppError("forbidden", planLimitMessage(plan, "featured"), { upgrade: true });
 }
 
+/** Before creating a listing by hand: a workspace already at its limit is sent to the plans first. */
+export async function assertRoomForNewListing(m: MemberContext): Promise<void> {
+  const { plan, live } = await planUsage(m);
+  if (live >= plan.maxListings) throw new AppError("forbidden", planLimitMessage(plan, "listings"), { upgrade: true });
+}
+
 export type PlanUsage = { plan: Plan & { expiresAt: Date | null; chosen: PlanId }; live: number; featured: number; aiUsed: number };
 
 /** What the plan page shows: the plan and how much of it is in use. */
