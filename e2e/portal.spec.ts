@@ -123,3 +123,23 @@ test("a free agent who reaches the plan limit is offered the paid plans", async 
   await sheet.getByRole("link", { name: "Ver planes y mejorar" }).click();
   await expect(page).toHaveURL(/\/panel\/plan$/);
 });
+
+test("the portal has terms and a way back in when an agent forgets the password", async ({ page }) => {
+  await page.goto(`${PORTAL}/terminos`);
+  await expect(page.getByRole("heading", { level: 1, name: "Términos y condiciones" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "política de privacidad" })).toBeVisible();
+
+  await page.goto(`${PORTAL}/panel/ingresar`);
+  await page.getByRole("link", { name: "¿Olvidaste tu contraseña?" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Recupera tu acceso" })).toBeVisible();
+  // Email is not connected in e2e: the page says so instead of pretending to send a link.
+  await expect(page.getByText("La recuperación por correo aún no está activa")).toBeVisible();
+
+  await page.goto(`${PORTAL}/panel/restablecer`);
+  await expect(page.getByRole("heading", { level: 1, name: "El enlace ya no sirve" })).toBeVisible();
+});
+
+test("agent sites have no portal terms page", async ({ request }) => {
+  const res = await request.get("/terminos");
+  expect(res.status()).toBe(404);
+});

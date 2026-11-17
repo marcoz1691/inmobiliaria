@@ -14,6 +14,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Search pages ("casas en venta en Quito"), only for combinations that have live listings.
     ...landingLinks(facets).map((l) => ({ url: `${origin}${l.href}`, changeFrequency: "daily" as const, priority: l.city ? 0.7 : 0.8 })),
     { url: `${origin}/privacidad`, changeFrequency: "yearly", priority: 0.2 },
+    ...(portal ? [{ url: `${origin}/terminos`, changeFrequency: "yearly" as const, priority: 0.2 }] : []),
     ...slugs.map((p) => ({ url: `${origin}/propiedades/${p.slug}`, lastModified: p.updatedAt, changeFrequency: "weekly" as const, priority: 0.8 })),
   ];
   if (portal) {

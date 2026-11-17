@@ -78,10 +78,13 @@ async function PortalLayout({ children }: { children: React.ReactNode }) {
         tagline="Propiedades en venta y alquiler en todo Ecuador"
         nav={[...nav.slice(0, 4), { label: "Publica tu propiedad", href: "/panel/registro" }, { label: "Ingresar como agente", href: "/panel/ingresar" }]}
         categories={topCategories(facets, 6).map((c) => ({ label: c.label, href: c.href }))}
+        email={env.PORTAL_CONTACT_EMAIL}
+        whatsapp={env.BILLING_WHATSAPP}
+        termsHref="/terminos"
         legal={
           <p>
             {env.PORTAL_NAME} es un producto de{" "}
-            <a href="https://www.marcsintelligence.app" target="_blank" rel="noopener" className="font-semibold text-ink underline-offset-4 hover:underline">
+            <a href="https://www.marcsintelligence.com" target="_blank" rel="noopener" className="font-semibold text-ink underline-offset-4 hover:underline">
               MarcsIntelligence<span className="sr-only"> (se abre en una pestaña nueva)</span>
             </a>
           </p>

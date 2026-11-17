@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/privacidad" },
 };
 
-const UPDATED = "20 de octubre de 2026";
+const UPDATED = "17 de noviembre de 2026";
 
 function Pending() {
   return <span className="rounded-xs bg-reserved-bg px-1.5 py-0.5 text-sm text-reserved">Pendiente de completar</span>;
@@ -37,17 +37,28 @@ export default async function PrivacyPage() {
   const pixel = Boolean(env.META_PIXEL_ID);
   const draft = env.NODE_ENV !== "production";
 
+  const email = portal ? env.PORTAL_CONTACT_EMAIL : agent?.email;
+  const whatsapp = portal ? env.BILLING_WHATSAPP : agent?.whatsapp;
   const contactWays = [
-    agent?.email ? { label: "Correo", value: agent.email, href: `mailto:${agent.email}` } : null,
-    agent?.whatsapp ? { label: "WhatsApp", value: agent.whatsapp, href: `https://wa.me/${agent.whatsapp.replace(/\D/g, "")}` } : null,
+    email ? { label: "Correo", value: email, href: `mailto:${email}` } : null,
+    whatsapp ? { label: "WhatsApp", value: whatsapp, href: `https://wa.me/${whatsapp.replace(/\D/g, "")}` } : null,
     agent?.phone ? { label: "Teléfono", value: agent.phone, href: `tel:${agent.phone.replace(/[^\d+]/g, "")}` } : null,
   ].filter((r): r is { label: string; value: string; href: string } => r !== null);
 
-  const owner: { label: string; value: React.ReactNode }[] = [
-    { label: "Nombre comercial", value: site?.name ?? env.PORTAL_NAME },
-    { label: "Nombre o razón social", value: <Pending /> },
-    { label: "RUC o cédula", value: <Pending /> },
-    { label: "Domicilio", value: agent?.city ? <>{agent.city} · dirección <Pending /></> : <Pending /> },
+  const owner: { label: string; value: React.ReactNode }[] = portal
+    ? [
+        { label: "Nombre comercial", value: env.PORTAL_NAME },
+        { label: "Responsable", value: env.PORTAL_OWNER_NAME ?? <Pending /> },
+        ...(env.PORTAL_OWNER_ID ? [{ label: "RUC o cédula", value: env.PORTAL_OWNER_ID }] : []),
+        { label: "Domicilio", value: env.PORTAL_OWNER_ADDRESS ?? <Pending /> },
+      ]
+    : [
+        { label: "Nombre comercial", value: site?.name ?? env.PORTAL_NAME },
+        { label: "Nombre o razón social", value: <Pending /> },
+        { label: "RUC o cédula", value: <Pending /> },
+        { label: "Domicilio", value: agent?.city ? <>{agent.city} · dirección <Pending /></> : <Pending /> },
+      ];
+  owner.push(
     ...(agent?.affiliation ? [{ label: "Afiliación", value: agent.affiliation }] : []),
     {
       label: "Contacto",
@@ -63,7 +74,7 @@ export default async function PrivacyPage() {
         <Pending />
       ),
     },
-  ];
+  );
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10 sm:px-8 lg:py-16">
@@ -134,7 +145,7 @@ export default async function PrivacyPage() {
                 e invitarte a agendar una cita.
               </li>
             ) : null}
-            {integrations.ai ? (
+            {integrations.ai && !portal ? (
               <li>
                 <strong>Chat del sitio:</strong> los mensajes que escribes, para responderte y, si lo pides, pasar la conversación a una persona.
               </li>
@@ -182,7 +193,13 @@ export default async function PrivacyPage() {
             {integrations.whatsapp || integrations.metaMessaging || integrations.metaWebhooks || integrations.metaCapi || pixel ? (
               <li>Meta Platforms: WhatsApp Business, Messenger, Instagram, formularios de anuncios y medición de anuncios, según el canal que uses.</li>
             ) : null}
-            {integrations.ai ? (
+            {integrations.ai && portal ? (
+              <li>
+                Anthropic: cuando un agente sube la ficha en PDF de una propiedad, el documento se envía a Anthropic para que un asistente de inteligencia
+                artificial (Claude) prepare el borrador de la publicación. El agente lo revisa antes de publicarlo.
+              </li>
+            ) : null}
+            {integrations.ai && !portal ? (
               <li>
                 Anthropic: las respuestas del chat las genera un asistente de inteligencia artificial (Claude). El contenido de la conversación se envía a
                 Anthropic para generar cada respuesta. No escribas en el chat datos sensibles, como información de salud o datos bancarios.
@@ -213,8 +230,8 @@ export default async function PrivacyPage() {
         <Section id="conservacion" title="Cuánto tiempo conservamos tus datos">
           {integrations.metaCapi ? <p>La dirección IP y el tipo de navegador enviados a Meta se borran al enviar el evento o, como máximo, a los 7 días.</p> : null}
           <p>
-            Los datos de contacto, tus respuestas y el historial de mensajes se conservan hasta que pidas su eliminación. Plazo máximo de conservación:{" "}
-            <Pending />
+            Los datos de contacto, tus respuestas y el historial de mensajes se conservan hasta que pidas su eliminación
+            {portal ? ". Los datos de la cuenta de un agente se conservan mientras la cuenta exista." : "."}
           </p>
         </Section>
 

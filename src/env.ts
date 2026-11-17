@@ -22,6 +22,11 @@ const schema = z.object({
   PORTAL_NAME: z.string().trim().min(1).default("NestAndes"),
   /** WhatsApp of the portal's sales team; agents use it to activate a paid plan until online payment exists. */
   BILLING_WHATSAPP: optional,
+  /** Who runs the portal, shown in its privacy policy and terms (LOPDP). Empty = shown as pending. */
+  PORTAL_OWNER_NAME: optional,
+  PORTAL_OWNER_ID: optional,
+  PORTAL_OWNER_ADDRESS: optional,
+  PORTAL_CONTACT_EMAIL: optional,
   /**
    * Every agent gets a site at <tenant-slug>.<TENANT_BASE_DOMAIN> (e.g. "maria.miportal.ec").
    * Defaults to "localhost" outside production, so piloto.localhost:3000 shows the pilot's site.

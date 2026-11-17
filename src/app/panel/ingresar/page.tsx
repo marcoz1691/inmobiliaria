@@ -23,6 +23,11 @@ export default async function LoginPage() {
           <p className="mt-2 max-w-xs text-[0.9375rem] leading-relaxed text-ink-muted">Publica propiedades y atiende a tus prospectos desde cualquier dispositivo.</p>
         </div>
         <LoginForm />
+        <p className="mt-4 text-center text-[0.9375rem]">
+          <Link href="/panel/recuperar" className="font-medium text-link underline-offset-4 hover:underline">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
         {portal ? (
           <p className="mt-6 text-center text-[0.9375rem] text-ink-muted">
             ¿Eres agente y aún no tienes cuenta?{" "}

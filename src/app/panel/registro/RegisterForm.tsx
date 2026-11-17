@@ -103,7 +103,11 @@ export function RegisterForm({ formToken, honeypotName }: { formToken: string; h
         {pending ? "Creando tu cuenta…" : state.status === "success" ? "Entrando a tu panel…" : "Crear cuenta"}
       </Button>
       <p className="mt-4 text-center text-sm text-ink-muted">
-        Al crear tu cuenta aceptas la{" "}
+        Al crear tu cuenta aceptas los{" "}
+        <Link href="/terminos" className="text-link underline underline-offset-4">
+          términos y condiciones
+        </Link>{" "}
+        y la{" "}
         <Link href="/privacidad" className="text-link underline underline-offset-4">
           política de privacidad
         </Link>

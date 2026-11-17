@@ -19,6 +19,8 @@ type SiteFooterProps = {
   /** Legal or licensing line supplied by the agent (never invented). */
   legal?: ReactNode;
   privacyHref?: string;
+  /** Terms of use; only the portal has them (agents' own sites set their own). */
+  termsHref?: string;
 };
 
 const linkClass = "inline-flex min-h-11 items-center text-ink-muted underline-offset-4 transition-colors hover:text-ink hover:underline";
@@ -36,6 +38,7 @@ export function SiteFooter({
   location,
   legal,
   privacyHref = "/privacidad",
+  termsHref,
 }: SiteFooterProps) {
   const wa = whatsapp ? whatsappHref(whatsapp, `Hola ${name}, quisiera más información.`) : null;
   const year = new Date().getFullYear();
@@ -124,6 +127,11 @@ export function SiteFooter({
             <Link href={privacyHref} className={linkClass}>
               Privacidad
             </Link>
+            {termsHref ? (
+              <Link href={termsHref} className={linkClass}>
+                Términos
+              </Link>
+            ) : null}
           </div>
           {legal ? <div>{legal}</div> : null}
         </div>
