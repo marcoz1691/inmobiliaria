@@ -28,8 +28,10 @@ export async function createDb(opts: Options = {}): Promise<Db> {
   }
   const { PGlite } = await import("@electric-sql/pglite");
   const dir = opts.pgliteDir ?? process.env.PGLITE_DIR ?? ".data/pglite";
-  if (dir !== "memory") mkdirSync(path.dirname(path.resolve(dir)), { recursive: true });
-  const client = dir === "memory" ? new PGlite() : new PGlite(path.resolve(dir));
+  // PGlite is development/test runtime data. Do not trace its dynamic path into production output.
+  const resolvedDir = dir === "memory" ? null : path.resolve(/*turbopackIgnore: true*/ dir);
+  if (resolvedDir) mkdirSync(path.dirname(resolvedDir), { recursive: true });
+  const client = resolvedDir ? new PGlite(resolvedDir) : new PGlite();
   const db = drizzlePglite(client, { schema, casing: "snake_case" });
   // Embedded databases migrate on boot so `npm run dev` works with zero setup.
   await migratePglite(db, { migrationsFolder });

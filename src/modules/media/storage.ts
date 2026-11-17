@@ -17,11 +17,12 @@ export interface MediaStorage {
 /** Objects that must never be reachable without a session (e.g. imported source PDFs). No public URL. */
 export type PrivateStorage = Omit<MediaStorage, "url">;
 
-const LOCAL_ROOT = path.join(process.cwd(), ".data", "media");
-const LOCAL_PRIVATE_ROOT = path.join(process.cwd(), ".data", "private");
+// Local media is runtime-only development data. It must never be traced into a production bundle.
+const LOCAL_ROOT = path.resolve(/*turbopackIgnore: true*/ process.cwd(), ".data", "media");
+const LOCAL_PRIVATE_ROOT = path.resolve(/*turbopackIgnore: true*/ process.cwd(), ".data", "private");
 
 function resolveIn(root: string, key: string): string {
-  const file = path.resolve(root, key);
+  const file = path.resolve(/*turbopackIgnore: true*/ root, key);
   if (!file.startsWith(root + path.sep)) throw new Error("Invalid media key");
   return file;
 }

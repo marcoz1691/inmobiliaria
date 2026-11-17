@@ -1,3 +1,4 @@
+import { ChangePasswordForm } from "@/components/admin/ChangePasswordForm";
 import type { Metadata } from "next";
 import { requireMember } from "@/server/session";
 import { SOCIAL_KEYS, getMyProfile, getSite } from "@/modules/agents/admin";
@@ -47,6 +48,11 @@ export default async function ProfilePage() {
         <ListGroup as="div" title="Sitio" titleId="site">
           <GroupBody>
             <SiteForm initial={{ name: site.name, tagline: site.tagline ?? "" }} canEdit={m.role !== "agent"} />
+          </GroupBody>
+        </ListGroup>
+        <ListGroup as="div" title="Contraseña" titleId="password">
+          <GroupBody>
+            <ChangePasswordForm />
           </GroupBody>
         </ListGroup>
       </div>

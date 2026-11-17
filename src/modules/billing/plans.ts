@@ -1,5 +1,5 @@
 /**
- * Subscription plans. Prices in US$ per month before IVA (15 %). Limits are enforced on the
+ * Subscription plans. Prices in US$ per month before IVA (13 %). Limits are enforced on the
  * server (publishing, featuring, AI PDF reads); changing a number here changes the product.
  */
 export const PLAN_IDS = ["free", "agente", "pro", "inmobiliaria"] as const;
@@ -15,8 +15,6 @@ export type Plan = {
   aiImportsPerMonth: number;
   /** Listings shown first on the portal and in search results. */
   maxFeatured: number;
-  /** Agent accounts in the workspace. */
-  seats: number;
   pitch: string;
   features: string[];
   highlight?: boolean;
@@ -30,9 +28,8 @@ export const PLANS: Record<PlanId, Plan> = {
     maxListings: 1,
     aiImportsPerMonth: 1,
     maxFeatured: 0,
-    seats: 1,
     pitch: "Prueba el portal con una propiedad.",
-    features: ["1 propiedad publicada", "1 PDF leído con IA al mes", "Perfil de agente en el portal", "Consultas directo a tu panel y WhatsApp"],
+    features: ["1 propiedad publicada", "1 PDF leído con IA al mes", "Perfil de agente en el portal", "Consultas a tu panel y WhatsApp", "CRM, agenda y embudo de citas"],
   },
   agente: {
     id: "agente",
@@ -41,9 +38,8 @@ export const PLANS: Record<PlanId, Plan> = {
     maxListings: 15,
     aiImportsPerMonth: 20,
     maxFeatured: 1,
-    seats: 1,
     pitch: "Para el agente independiente.",
-    features: ["15 propiedades publicadas", "20 PDFs leídos con IA al mes", "1 propiedad destacada", "CRM de prospectos", "Tu sitio propio con tu nombre"],
+    features: ["15 propiedades publicadas", "20 PDFs leídos con IA al mes", "1 propiedad destacada", "Todo lo del plan Gratis"],
   },
   pro: {
     id: "pro",
@@ -52,9 +48,8 @@ export const PLANS: Record<PlanId, Plan> = {
     maxListings: 50,
     aiImportsPerMonth: 60,
     maxFeatured: 5,
-    seats: 1,
     pitch: "Para quien vive de sus anuncios.",
-    features: ["50 propiedades publicadas", "60 PDFs leídos con IA al mes", "5 propiedades destacadas", "Agenda de visitas y recordatorios", "Embudo para anuncios de Meta"],
+    features: ["50 propiedades publicadas", "60 PDFs leídos con IA al mes", "5 propiedades destacadas", "Todo lo del plan Agente"],
     highlight: true,
   },
   inmobiliaria: {
@@ -64,13 +59,12 @@ export const PLANS: Record<PlanId, Plan> = {
     maxListings: 200,
     aiImportsPerMonth: 200,
     maxFeatured: 15,
-    seats: 5,
-    pitch: "Para equipos y oficinas.",
-    features: ["200 propiedades publicadas", "200 PDFs leídos con IA al mes", "15 propiedades destacadas", "Hasta 5 agentes", "Dominio propio"],
+    pitch: "Para oficinas con mucho inventario.",
+    features: ["200 propiedades publicadas", "200 PDFs leídos con IA al mes", "15 propiedades destacadas", "Todo lo del plan Pro"],
   },
 };
 
-export const IVA_RATE = 0.15;
+export const IVA_RATE = 0.13;
 
 /** A paid plan past its end date falls back to Gratis; nothing is deleted, publishing more is blocked. */
 export function effectivePlan(plan: string | null | undefined, expiresAt: Date | null | undefined, now = new Date()): Plan {

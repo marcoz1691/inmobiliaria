@@ -35,7 +35,15 @@ export function WeeklyHours({ initial }: { initial: Rule[] }) {
   const [days, setDays] = useState<Record<number, Range[]>>(() => {
     const out: Record<number, Range[]> = {};
     for (const d of DAYS) out[d.n] = [];
-    for (const r of initial) out[r.weekday]!.push({ key: crypto.randomUUID(), start: toTime(r.startMinute), end: r.endMinute === 1440 ? "23:59" : toTime(r.endMinute) });
+    for (const [index, r] of initial.entries()) {
+      // The initializer runs during SSR and again while hydrating. Initial keys must therefore be
+      // derived from the serialized rules; random UUIDs make the input ids differ on the client.
+      out[r.weekday]!.push({
+        key: `initial-${r.weekday}-${index}`,
+        start: toTime(r.startMinute),
+        end: r.endMinute === 1440 ? "23:59" : toTime(r.endMinute),
+      });
+    }
     return out;
   });
   const [msg, setMsg] = useState<{ text: string; error?: boolean } | null>(null);
